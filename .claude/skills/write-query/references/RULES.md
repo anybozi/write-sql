@@ -134,7 +134,7 @@ select ...
 | 主宽入网数 | 是否包含 `kd_desc='普通宽带'`、`is_new_user=1`、`prod_type=30`、`open_date` 月份 | 沿用旧 `view_ads_yz_kd_new_list` 口径 |
 | 销售品发展量 | 主表是否为 041；是否按 `action_id IN (1292,6200)`；是否排除撤单作废 | 用专项产品清单或 014 存量表统计动作 |
 | 维表补名称 | 销售品维表是否加 `city_id=200`；机构维表是否加 `levs` | 维表错配或 JOIN 放大 |
-| 拆机前月属性回溯 | 069 是否用**月表**；拆机是否默认逻辑拆机；特性是否用月表且 `par_corp_id='200'` | 069 日表配特性月表；用特性日表查已拆机历史 |
-| 产品规格属性中文 | 字典是否用 `attr_inner_value`（非 `attr_value`）关联 `attr_value1` | 特性中文名关联键错误 |
+| 拆机前月属性回溯 | 069 是否用**月表**；拆机是否默认逻辑拆机；**105 vs 106 是否区分**；两表是否均用月表且 `par_corp_id='200'` | 069 日表配属性月表；105/106 混用；用日表查已拆机历史 |
+| 产品规格/附属产品属性中文 | 字典是否用 `attr_inner_value`（非 `attr_value`）关联 `attr_value1` | 特性中文名关联键错误 |
 
 维护来源：精简自 `D_experience/cdap_global_rules.md` 和 `D_experience/anti_patterns.md`。
