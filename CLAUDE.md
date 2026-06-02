@@ -18,15 +18,15 @@ claude/skills/
 ├── write-query/
 │   ├── SKILL.md
 │   └── references/
-│       ├── KNOWLEDGE_LAYERS.md   # A/B/C 三层路径总览
-│       ├── TABLE_INDEX.md
-│       ├── metric_table_map.md  # 指标 → CDAP 流程
-│       ├── metric_bridge.md     # CDAP 流程 → tables/ 下现网表 md
-│       ├── 指标字典.md
-│       ├── 指标字典/
-│       ├── tables/             # A 层：各表字段与分区（主路径）
-│       ├── demand-cases/       # C 层：需求案例与模板
-│       └── metrics/README.md   # B 层入口说明
+│       ├── TABLE_INDEX.md      # 运行时表索引 / schema linking
+│       ├── METRIC_INDEX.md     # 指标 → 技术口径 → 表文档统一索引
+│       ├── ROUTING.md          # 业务术语与主表路由
+│       ├── FIELD_BACKFILL.md   # 字段缺口补表规则
+│       ├── RULES.md            # SQL 生成后审计规则
+│       ├── tables/             # 各表字段、分区、粒度
+│       ├── metrics/            # 单指标技术口径文件（基本面/专题/战新）
+│       ├── verified-cases/     # 已验证案例与模板（含 INDEX.md）
+│       └── D_experience/       # 经验层：dictionaries 码值字典；_archive 运行时禁读
 │
 └── excel-to-table-md/
     ├── SKILL.md
@@ -47,9 +47,10 @@ python claude/skills/excel-to-table-md/scripts/convert.py <Excel文件路径> [-
 ## 工作流程
 
 ### 编写 Hive SQL
-1. 参照 `TABLE_INDEX.md` 与 `KNOWLEDGE_LAYERS.md` 理解 A/B/C 三层
-2. 指标 → `指标字典` + `metric_table_map` / `metric_bridge`；表结构 → `references/tables/{序号}_{表名}.md`（与索引不一致时以表名+Hive 表名为准）
-3. 按 `write-query/SKILL.md` 的最佳实践编写 SQL，输出中注明口径来源
+1. 以 `write-query/SKILL.md` 为唯一运行时流程权威。
+2. 主表选择 → `TABLE_INDEX.md` + `ROUTING.md`；标准指标 → `METRIC_INDEX.md` + 命中单指标文件。
+3. 字段映射 → `references/tables/{序号}_{表名}.md`（与索引不一致时以表名+Hive 表名为准）；缺字段补表 → `FIELD_BACKFILL.md`。
+4. SQL 生成后用 `RULES.md` 和相关字典审计，输出中注明口径来源。
 
 ### 转换新 Excel
 1. 将 Excel 文件放入 `CDAP清单拆分/` 目录
@@ -82,10 +83,10 @@ python claude/skills/excel-to-table-md/scripts/convert.py <Excel文件路径> [-
 ## 表查找规则
 
 优先查找专项表：
-- 台阶收入 → `台阶收入清单`(5)
-- 科目收入 → `全量科目级收入`(89)
-- 号码订单 → `全业务号码订单表`(44)
-- 套餐订单 → `宽带到达套餐收入清单`(50)
+- 台阶收入 → `台阶收入清单`(101)
+- 科目收入 → `全量科目级收入`(048)
+- 号码订单 → `全业务号码订单表`(040)
+- 套餐订单 → `宽带到达套餐收入清单`(050)
 
 ## 注意事项
 
