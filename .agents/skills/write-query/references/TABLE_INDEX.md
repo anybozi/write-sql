@@ -25,7 +25,7 @@
 | 销售品参数、折扣、赠金、统付金额补全 | 107 销售品参数表 | 按 `serv_id + prod_offer_id + param_code` 补 `param_value` | 不要用它判断销售品是否在档；在档仍先用 014 |
 | 号码订单动作 | 040 全业务号码订单表 | 号码级受理、变更、订单动作 | 不要用 069 代替动作事实 |
 | 收入类 | 047 最终版划小收入；048 全量科目级收入；097 基本面月清单；101 台阶收入清单 | 划小收入、科目收入、基本面、台阶收入；最新月科目收入可用 `dwm_srhx_src_income_list` | 不要用 069 的状态字段推收入 |
-| 积分类 | 007 净增积分清单；012 发展存量积分清单；081 揽装积分清单；082 双线净增积分清单；091 财务部积分多维表 | 积分明细、积分汇总、财务积分 | 不要混用不同积分口径 |
+| 积分类 | 012 发展存量积分清单；007 净增积分清单；081 揽装积分清单；082 双线净增积分清单；091 财务部积分多维表 | 积分类全量明细默认先看 012；专项指标/专项表明确时再看 007/081/082/091 | 不要把派生专项表当全量底表；不要仅因 `jz_points` 字段去 069 |
 | 续约类 | 030 移动续约清单；032 宽带续约清单；065 双线续约清单；096 酒宽续约清单 | 移动/宽带/双线/酒店宽带续约 | 不要用新装或订单表替代续约事实 |
 | 降档/升降档 | 008/009 129+套餐升降档路径；010 降档原始清单；011 降档动作订单清单；104 降档清单 | 升降档路径、降档动作、降档明细 | 先区分路径、多维、动作、结果 |
 | 客户实体映射 / 客户信息维护 | 108 产权客户全量表；109 直销客户表 | 签订/维护直销客户；通过产权客户找直销客户；按客户信息更新客户资料 | 号码/服务明细要客户名、产权客户名、直销客户名时，优先用 069 或当前事实主表自带客户字段 |
@@ -57,7 +57,7 @@
 | 009 | 129+套餐升降档路径多维表 | ads_yz_bd129_sdjd_dwb | ads_yz_bd129_sdjd_dwb | tables/009_129+套餐升降档路径多维表.md |  |  | 129+套餐升降档路径多维表相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
 | 010 | 降档原始清单 | ads_yz_sunshou_acc_list | ads_yz_sunshou_acc_list | tables/010_降档原始清单.md |  |  | 降档原始清单相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
 | 011 | 降档动作订单清单 | ads_yz_sunshou_qudao | ads_yz_sunshou_qudao | tables/011_降档动作订单清单.md |  |  | 降档动作订单清单相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
-| 012 | 发展存量积分清单 | ads_yz_score_all_list | ads_yz_score_all_list | tables/012_发展存量积分清单.md |  | par_month_id | 发展存量积分清单相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
+| 012 | 发展存量积分清单 | ads_yz_score_all_list | ads_yz_score_all_list | tables/012_发展存量积分清单.md | 积分类全量明细底表，含号码/服务/积分类型/客户/网格/积分字段 | par_month_id | 积分类全量明细、发展积分、存量积分，以及需要积分类型层级、号码、客户、网格、竣工时间、价值/激励积分及描述的取数 | 字段名相似但业务事实不在本表时不要选；明确专项指标/专项表口径时再看 007/081/082/091 |
 | 013 | 全业务资料表 | ads_yz_tb_comm_cm_all_final | dwm_yz_tb_comm_cm_all_final；dwm_yz_tb_comm_cm_all_mon_final | tables/013_全业务资料表.md | 以 serv_id 为服务粒度；账期/统计月份一般为 par_month_id | par_month_id | 全业务资料表相关取数；近半年账期优先日表 `dwm_yz_tb_comm_cm_all_final`，更早历史账期走月表 `dwm_yz_tb_comm_cm_all_mon_final`，重叠账期默认优先日表 | 字段名相似但业务事实不在本表时不要选 |
 | 014 | 优惠资料表 | ads_yz_rpt_comm_cm_msdisc_final | ads_yz_rpt_comm_cm_msdisc_final | tables/014_优惠资料表.md |  | par_month_id | 优惠资料表相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
 | 015 | 字典表视图 | dws_crm_cfguse.dws_attr_value | dws_crm_cfguse.dws_attr_value | tables/015_字典表视图.md |  |  | 字典表视图相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
@@ -117,7 +117,7 @@
 | 075 | 小微收入清单 | zone_gz_yz.ads_yz_ict2024_all_sr_LIST_ex_list | zone_gz_yz.ads_yz_ict2024_all_sr_LIST_ex_list | tables/075_小微收入清单.md |  | par_month_id | 小微收入清单相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
 | 077 | 家庭地址客户入网价值清单 | zone_gz_yz.ads_yz_yzn_addr_label_setting_list | zone_gz_yz.ads_yz_yzn_addr_label_setting_list | tables/077_家庭地址客户入网价值清单.md |  | par_month_id | 家庭地址客户入网价值清单相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
 | 080 | 大额榜单账单级清单 | zone_gz_yz.ads_ys_bd_bill | zone_gz_yz.ads_ys_bd_bill | tables/080_大额榜单账单级清单.md |  |  | 大额榜单账单级清单相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
-| 081 | 揽装积分清单 | ads_yz_lyf_lz | ads_yz_lyf_lz | tables/081_揽装积分清单.md |  | par_month_id | 揽装积分清单相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
+| 081 | 揽装积分清单 | ads_yz_lyf_lz | ads_yz_lyf_lz | tables/081_揽装积分清单.md | 揽装积分专项口径/派生清单 | par_month_id | 用户明确点名揽装积分专项表、揽装积分清单专项口径或 `ads_yz_lyf_lz` 时使用 | 积分类全量明细默认用 012；不要仅因用户说揽装积分、价值积分、激励积分就自动切到本表 |
 | 082 | 双线净增积分清单 | ads_yz_tb_tyks_score_inc_zx_mtd | ads_yz_tb_tyks_score_inc_zx_mtd | tables/082_双线净增积分清单.md |  |  | 双线净增积分清单相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
 | 083 | 拆机登记清单（新） | ads_yz_tb_zsh_cjdj_list | ads_yz_tb_zsh_cjdj_list | tables/083_拆机登记清单（新）.md |  | par_month_id | 拆机登记清单（新）相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
 | 087 | 片区收入多维表 | ads_srhx_xxb_wyh_region_list_mon | ads_srhx_xxb_wyh_region_list_mon | tables/087_片区收入多维表.md |  | par_month_id | 片区收入多维表相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
