@@ -181,6 +181,7 @@ runtime: true
 | 客户清单基本面/产数收入 | 047 最终版划小收入 `dwm_srhx_serv_list_mon_final` | 用户附件种子表 | 069、097 单独承接、108/109 客户维表 | 按附件 `cust_nbr` 匹配收入表，锁 `par_month_id` 起止月份；基本面收入 `sum(fee_fm_new)`，产数收入 `sum(fee_cs)`；服务/月粒度先聚合到客户级再回连附件 |
 | 基本面收入 | 097 基本面月清单 | 指标 SQL 指定表 | 069 | A0 税后等以收入口径为准 |
 | 台阶收入 | 101 台阶收入清单 | - | 其它收入表 | 专项收入口径 |
+| 实收金额 / 按号码清单查实收 | 117 实收来源汇总表 `zone_gz_yz.dwd_yz_if_real_src_sum_new_final` | 用户附件种子表；需要确认 VPN/专线属性时再补 069/033 | 047、048、069、033 专线表直接替代 | 附件号码按 `acc_nbr` 匹配，锁 `par_month_id` 起止月份；实收金额 `sum(case when flag='HF' then amount-amount_tc else 0 end) + sum(case when flag='OT' then amount else 0 end)`；先按 `par_month_id, serv_id, acc_nbr` 汇总再打横 |
 | 市场化承包合同下有效揽装人 / 实际工号数量 | 110 结算账单表 `dws_tpss_jszx.dws_settle_bill` | 113 揽装所属表 `_mon_final`；必要时回查 112 网点维表、111 揽装人维表 | 069、订单表、积分表、收入明细表 | 合同、结算账期、网点事实在结算账单表；按 `channel_id + substr(billing_cycle_id,1,6)` 补有效网点下有效揽装人；实际工号数量用 `count(distinct staff_id)` |
 | 无号码收入网点诊断 | 112 网点维表 `_mon_final` | 113 揽装所属表 `_mon_final`；111 揽装人维表 `_mon_final` | 号码表、收入表直接反推网点有效性 | 按账期和网点清单先判断网点是否无效；有效网点在 113 无记录表示无有效揽装人关系，再回查 111 区分揽装人无效 |
 | 国际漫游开通号码 / 国漫权限 | 114 国际漫游数据表 `dws_ctg.dws_mktag_download_share_guoman_label` | 069 全业务资料表补客户、产品、局向等号码属性 | 漫游结算收入表、订单表 | 本表内号码为已开通国际漫游权限号码；按 `msisdn` 关联 069 `acc_nbr`，按 `yyyymmdd` 锁统计日 |
