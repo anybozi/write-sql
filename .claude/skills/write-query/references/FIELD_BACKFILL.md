@@ -35,7 +35,7 @@ runtime: true
 - 只需要状态、动作、原因等码值含义且**仅用于 WHERE 过滤**时，优先读字典 md 写码值，可不 JOIN 字典表。
 - **069.`state` 作为输出字段时**：默认交付 **码值 + 中文名**；补 `dws_crm_cfguse.dws_attr_value`（`attr_id='4000000201'`，`attr_value = state` → `attr_value_name`）。
 - 只需要销售品、产品、机构、销售员等名称补全时，补维表；不要因此改写主表。
-- 需求出现“主体编码 / 主体名称”时，默认指网点经营主体，直接补 021 揽装网点维表；不要全库搜索。
+- 需求出现“主体编码 / 主体名称”时，默认指网点经营主体，直接补 112 网点维表；不要全库搜索。
 - 只需要订单状态、受理时间、协销人等订单事实字段时，补订单/协销事实表；不要反向把订单表改成主表。
 - 主表已有中文名称字段且语义明确时，不补维表。
 
@@ -51,12 +51,15 @@ runtime: true
 | 折扣 / 赠金 / 统付金额 / 销售品参数值 | 014 `prod_offer_id`、`serv_id` | 014 能确认在档销售品和到期时间，但缺具体参数值 | 107 销售品参数表 `summary_ods_day_city.rpt_comm_cm_msparam` | `serv_id + prod_offer_id + param_code`；固定 `par_corp_id='200'`；必要时按 `limit_date` 过滤有效期 | `param_code` 必须来自用户、产品口径或已验证案例；不要猜参数编码；不要用参数表判断销售品是否在档 |
 | SR科目名称 / SR科目路径 / 收入来源 / 计费收入科目 / 账目项 / 税后收入明细 | 069 `serv_id`、`acc_nbr`、客户/产品属性 | 先按项目、客户名、产品分类、号码清单等条件圈定对象，再要科目级收入明细 | 048 全量科目级收入 `dwm_srhx_src_income_list_mon`；最新月可用 `dwm_srhx_src_income_list` | `069.serv_id = 048.serv_id` 且账期一致；048 账期字段用 `month_id`；取 `due_income_name/due_type/data_src_name/col_income_name/acct_item_type_name/fee_all` | 048 是科目/账目项明细，一户一月可能多行；输出明细不随意去重，汇总时按输出维度 `sum(fee_all)` |
 | 产品名称 | `prod_id` | 主表只有产品 ID | 017 产品维表 | `主表.prod_id = product.prod_id` | 先确认产品维表字段名 |
-| 主体编码 / 主体名称 | `channel_nbr`、`channel_id`、`channel_name` | 需求要网点归属经营主体 | 021 揽装网点维表 | 优先 `主表.channel_nbr = 021.channel_nbr`；无 `channel_nbr` 再用 `channel_id` | 021 可能同一网点多人员，补表前按网点键去重 |
+| 主体编码 / 主体名称 | `channel_nbr`、`channel_id`、`channel_name` | 需求要网点归属经营主体 | 112 网点维表 | 优先 `主表.channel_nbr = 112.channel_nbr`；无 `channel_nbr` 再用 `channel_id`；历史账期用 `_mon_final + par_month_id` | 网点维表日表唯一；历史月按账期对齐，避免拿当前网点覆盖历史 |
 | 机构名称 / 分局 / 营服名称 | 各业务表中的机构 ID，如 `subst_id`、`branch_id`、`branch_org`、`manage_org` | 主表只有机构 ID 无名称 | 018 机构维表 | `业务表机构ID = 018.org_id`；是否限制 `levs` 看需求和来源 ID 语义 | 018 只负责机构 ID 翻译；不要脱离来源字段语义断定是直销客户、产权客户或号码归属 |
 | 落地县分 / 营服名称 | `std_subst_id`、`std_branch_id`、`std_subst_name`、`std_branch_name` | 主表只有 ID 无名称 | 018 机构维表 | `org_id` 关联；按层级限制 | 落地局向不同于划小局向 |
 | 订单编码 / 订单状态 / 受理时间 | `subs_id`、`subs_code`、`subs_stat_date`、`act_date` | 主表缺订单事实字段 | 040 全业务号码订单表 | 优先 `subs_id`；无 `subs_id` 再看 `serv_id` | 订单表可能一对多，需去重 |
 | 协销人 | 主表通常缺 | 主表无协销字段 | 040；不足再 042/043 协销表 | 按订单键或 `serv_id` 关联，必要时先去重 | 容易放大明细行 |
-| 揽装人 / 销售员 | `sales_id`、`sales_code`、`sales_name`、`sales_man_name`、`staff_id` | 主表缺姓名或工号不完整 | 021 或表文档指定销售员维表 | 按字段语义选择键 | 先确认是揽装人、受理人还是协销人 |
+| 揽装人 / 销售员 | `sales_id`、`sales_code`、`sales_name`、`sales_man_name`、`staff_id` | 主表缺姓名或工号不完整 | 111 揽装人维表；有效网点下有效揽装人用 113 揽装所属表 | 优先用 `staff_id` 关联；历史账期用 `_mon_final + par_month_id` | 先确认是揽装人、受理人还是协销人；`sales_code` 不唯一 |
+| 合同网点下有效揽装人 / 实际工号数量 | 110 `channel_id`、`billing_cycle_id` | 用户按市场化承包合同、合同编码、合同网点查有效销售人员或实际工号数量 | 113 揽装所属月表 `zone_gz_yz.dwd_yz_sales_man_outlers_mon_final` | `110.channel_id = 113.channel_id` AND `substr(110.billing_cycle_id,1,6)=113.par_month_id`；110 通常加 `shard='200'` 和用户合同清单 | 一个合同账期可能对应多个有效揽装人；实际工号数量用 `count(distinct staff_id)`，不要用 `sales_code` 去重 |
+| 网点有效性 | 用户网点清单 `channel_nbr/channel_id` | 诊断网点为什么无号码/收入，或确认网点是否有效 | 112 网点月表 `zone_gz_yz.dwd_yz_sale_outlers_mon_final` | 按 `par_month_id` + `channel_nbr/channel_id` 查；`status_cd='S0X'` 为无效 | 网点无效不会出现在 113 有效对应表里；不要只看 113 缺失就断言网点不存在 |
+| 揽装人有效性 | 113 或 111 `staff_id` | 诊断有效网点下是否无有效揽装人，或揽装人是否无效 | 111 揽装人月表 `zone_gz_yz.dwd_yz_sales_man_mon_final` | 用 `staff_id` 关联；`status_cd='S0X'` 为无效；历史账期按 `par_month_id` 对齐 | `sales_code` 不唯一，禁止作为揽装人唯一 JOIN 键 |
 | 揽装机构 | `salestaff_subst_id`、`salestaff_branch_id` | 主表只有机构 ID | 018 机构维表 | 分局 `salestaff_subst_id = org_id AND levs=3`；营服 `salestaff_branch_id = org_id AND levs=4` | 多次 JOIN 要检查别名 |
 | 双线速率 | 069 `speed_value`；033 `speed_value` | 主路径已在 069 时不补表；已补 033 或用户指定双线清单口径时可取 033 | 033 双线全量清单（可选） | 若补 033，按 `acc_nbr + par_month_id` 关联 | 不要只为速率强行补 033；两边均可取时跟随主路径 |
 | 双线月租 | 033 `yz_cs` | 069 不提供双线月租或用户明确要月租 | 033 双线全量清单 | `主表.acc_nbr = 033.acc_nbr` 且 `主表.par_month_id = 033.par_month_id` | 033 同号码同月可能多行，必要时按 `load_date` 去重 |
@@ -120,9 +123,25 @@ runtime: true
 ### 069 入网 / 到达按网点要主体编码、主体名称
 
 - 主表保持 069。
-- 主体编码、主体名称固定补 021 揽装网点维表，不全库搜索。
-- 优先用 `069.channel_nbr = 021.channel_nbr`；没有 `channel_nbr` 时再考虑 `channel_id`。
-- 补 021 前先按 `channel_nbr` 聚合出唯一 `own_operators_nbr`、`own_operators_name`，避免一网点多人员放大行数。
+- 主体编码、主体名称固定补 112 网点维表，不全库搜索。
+- 优先用 `069.channel_nbr = 112.channel_nbr`；没有 `channel_nbr` 时再考虑 `channel_id`。
+- 历史账期补 112 月表时，必须按 `par_month_id` 对齐；当前口径可用日表。
+
+### 市场化承包合同下查有效揽装人 / 实际工号
+
+- 合同、结算账期、网点事实来自 110 结算账单表 `dws_tpss_jszx.dws_settle_bill`，不是 069、订单表或积分表。
+- 110 常用字段：`contractno`、`contract_name`、`billing_cycle_id`、`channel_id`、`channel_code`、`channel_name`；广州常用 `shard='200'`。
+- 历史账期补有效揽装人时，优先补 113 揽装所属月表 `dwd_yz_sales_man_outlers_mon_final`。
+- JOIN：`settle.channel_id = smo.channel_id` AND `substr(settle.billing_cycle_id,1,6)=smo.par_month_id`。
+- 明细输出可保留多名有效揽装人；若用户问实际工号数量，优先 `count(distinct smo.staff_id)`。
+- `sales_code` 不唯一，不能作为揽装人唯一 JOIN 或去重键。
+
+### 无号码收入网点诊断
+
+- 先用 112 网点月表按 `par_month_id + channel_nbr/channel_id` 判断网点有效性；`status_cd='S0X'` 为无效网点。
+- 有效网点若在 113 揽装所属月表同账期无记录，判定为有效网点但无有效揽装人关系。
+- 需要细分揽装人无效时，用 111 揽装人月表按 `staff_id` 回查；`status_cd='S0X'` 为无效揽装人。
+- 业务解释：无效网点、有效网点但无揽装人、有效网点但揽装人无效，均不会发展号码和收入，因为网点号码和收入归属通过有效揽装人打标。
 
 ### 种子 serv_id + 拆机前一月产品规格/附属产品属性
 

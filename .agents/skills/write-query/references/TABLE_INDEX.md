@@ -29,7 +29,8 @@
 | 续约类 | 030 移动续约清单；032 宽带续约清单；065 双线续约清单；096 酒宽续约清单 | 移动/宽带/双线/酒店宽带续约 | 不要用新装或订单表替代续约事实 |
 | 降档/升降档 | 008/009 129+套餐升降档路径；010 降档原始清单；011 降档动作订单清单；104 降档清单 | 升降档路径、降档动作、降档明细 | 先区分路径、多维、动作、结果 |
 | 客户实体映射 / 客户信息维护 | 108 产权客户全量表；109 直销客户表 | 签订/维护直销客户；通过产权客户找直销客户；按客户信息更新客户资料 | 号码/服务明细要客户名、产权客户名、直销客户名时，优先用 069 或当前事实主表自带客户字段 |
-| 机构、销售员、协销补字段 | 018 机构维表；021 揽装网点维表；042 号码协销表；043 订单协销表 | 补机构层级、销售员、协销人 | 不要作为默认主表 |
+| 机构、销售员、协销补字段 | 018 机构维表；111 揽装人维表；112 网点维表；113 揽装所属表；042 号码协销表；043 订单协销表 | 补机构层级、销售员、协销人、网点经营主体 | 不要作为默认主表 |
+| 结算账单 / 合同网点 | 110 结算账单表；111 揽装人维表；112 网点维表；113 揽装所属表 | 结算报账、合同编码、合同账期、合同下网点、网点有效性、有效揽装人 | 不要用 069、订单表、积分表承接合同结算事实 |
 | 字典/码值中文名 | 015 字典表视图；016 字典维表视图 | 编码转中文、属性值解释 | 不要把码值表当业务事实表 |
 | 产品规格属性 / 特性历史快照 | 105 特性资料表 | 拆机前月主产品特性、历史某月 attr_id 特性值 | 不要用特性日表查已拆机历史；勿与 106 混用 |
 | 附属产品属性 / 附属产品历史快照 | 106 附属产品资料表 | 拆机前月附属产品特性 | 不要用附属日表查已拆机历史；勿与 105 混用 |
@@ -66,7 +67,7 @@
 | 018 | 机构维表视图 | zone_gz_yz.dwd_yz_dim_org | zone_gz_yz.dwd_yz_dim_org | tables/018_机构维表视图.md |  |  | 机构维表视图相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
 | 019 | 移动主套餐维表视图 | metadata_ods_day.tb_dim_cdma_disc_type | metadata_ods_day.tb_dim_cdma_disc_type | tables/019_移动主套餐维表视图.md |  |  | 移动主套餐维表视图相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
 | 020 | 销售品维表视图 | dws_crm_cfguse.dws_offer | dws_crm_cfguse.dws_offer | tables/020_销售品维表视图.md |  |  | 销售品维表视图相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
-| 021 | 揽装网点维表 | zone_gz_yz.dwd_yz_sales_man_outlers_final | zone_gz_yz.dwd_yz_sales_man_outlers_final | tables/021_揽装网点维表.md |  |  | 揽装网点维表相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
+| 021 | 揽装所属表（旧编号） | zone_gz_yz.dwd_yz_sales_man_outlers_final | zone_gz_yz.dwd_yz_sales_man_outlers_final | tables/021_揽装网点维表.md | 有效揽装人 + 有效网点对应关系（旧文档名保留兼容） |  | 旧编号兼容；新查询优先看 113 揽装所属表、111 揽装人维表、112 网点维表 | 不要当纯网点维表；网点唯一信息看 112 |
 | 079 | 地址维表 | zone_gz_yz.dwd_yz_addr_final | zone_gz_yz.dwd_yz_addr_final | tables/079_地址维表.md | 以 id 为地址粒度；grade 表示地址层级 |  | 地址 / 装机地址相关取数；主业务表取 `serv_addr_id` 后按 `CAST(serv_addr_id AS DECIMAL(24,0)) = id` 关联，装机地址默认 `grade=10` | 字段名相似但业务事实不在本表时不要选 |
 | 022 | 商企入网清单 | zone_gz_yz.ads_yz_shangqi_rw_list | zone_gz_yz.ads_yz_shangqi_rw_list | tables/022_商企入网清单.md |  | par_month_id | 商企入网清单相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
 | 023 | 基础业务托收清单 | zone_gz_yz.ads_yz_tb_cl_tuoshou_list | zone_gz_yz.ads_yz_tb_cl_tuoshou_list | tables/023_基础业务托收清单.md |  | par_month_id | 基础业务托收清单相关取数；先按表文档字段和常用条件核对 | 字段名相似但业务事实不在本表时不要选 |
@@ -141,3 +142,7 @@
 | 107 | 销售品参数表 | summary_ods_day_city.rpt_comm_cm_msparam | summary_ods_day_city.rpt_comm_cm_msparam | tables/107_销售品参数表.md | serv_id + prod_offer_id + param_code（以生产表为准） | par_corp_id | 销售品参数值补全；用户问折扣、赠金、统付金额、优惠参数等，先由 069/014 锁定 `serv_id` 与 `prod_offer_id` 后补 `param_value` | 不要作为销售品在档事实表；在档/到期时间先查 014；`param_code` 不可猜 |
 | 108 | 产权客户全量表 | dws_crm_cust.dws_customer | dws_crm_cust.dws_customer | tables/108_产权客户全量表.md | 产权客户粒度（以生产表为准） |  | 产权客户信息；按 `cust_name` 兜底补 `cust_number` | 客户名可能重名；有产权客户编码时优先编码匹配 |
 | 109 | 直销客户表 | zone_gz_yz.dws_yz_tb_mo_custgrp_cust_final | zone_gz_yz.dws_yz_tb_mo_custgrp_cust_final | tables/109_直销客户表.md | 产权客户到直销客户映射关系（以生产表为准） |  | 按 `cust_nbr` 补 `ccust_code`、`ccust_name`、机构 ID；机构名称再补 018 | 不要把机构 ID 字段脱离来源语义直接解释；可能一对多 |
+| 110 | 结算账单表 | dws_tpss_jszx.dws_settle_bill | dws_tpss_jszx.dws_settle_bill | tables/110_结算账单表.md | 结算账单 / 报账单粒度；包含合同、合作伙伴、网点、经营主体、金额和状态字段 | shard, billing_cycle_id | 结算账单、报账、合同编码、合作伙伴、网点、经营主体、支付/审核状态等取数；市场化承包合同下查网点和有效揽装人时作为合同网点事实来源 | 普通号码、服务、订单、积分或收入明细事实不要误选 |
+| 111 | 揽装人维表 | zone_gz_yz.dwd_yz_sales_man_final | zone_gz_yz.dwd_yz_sales_man_final；zone_gz_yz.dwd_yz_sales_man_mon_final | tables/111_揽装人维表.md | 揽装人粒度；日表唯一，月表按 `par_month_id` 快照 | par_month_id（月表） | 查揽装人信息、有效性、归属网点 `own_channel_id`；历史账期用月表 | `sales_code` 不唯一，不要作为揽装人唯一 JOIN / 去重键 |
+| 112 | 网点维表 | zone_gz_yz.dwd_yz_sale_outlers_final | zone_gz_yz.dwd_yz_sale_outlers_final；zone_gz_yz.dwd_yz_sale_outlers_mon_final | tables/112_网点维表.md | 网点粒度；日表唯一，月表按 `par_month_id` 快照 | par_month_id（月表） | 查网点编码、名称、有效性、经营主体及机构归属；历史账期用月表 | 不要把网点表当号码或收入事实表 |
+| 113 | 揽装所属表 | zone_gz_yz.dwd_yz_sales_man_outlers_final | zone_gz_yz.dwd_yz_sales_man_outlers_final；zone_gz_yz.dwd_yz_sales_man_outlers_mon_final | tables/113_揽装所属表.md | 有效揽装人 + 有效网点对应关系；月表按 `par_month_id` 快照 | par_month_id（月表） | 查有效网点下有效揽装人、合同网点实际工号数量、无号码收入网点诊断；优先用 `staff_id` 关联揽装人 | 只含有效组合；缺记录不等于网点不存在，需回查 111/112 判断无效或无揽装人 |
