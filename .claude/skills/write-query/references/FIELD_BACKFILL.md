@@ -62,6 +62,7 @@ runtime: true
 | 网点有效性 | 用户网点清单 `channel_nbr/channel_id` | 诊断网点为什么无号码/收入，或确认网点是否有效 | 112 网点月表 `zone_gz_yz.dwd_yz_sale_outlers_mon_final` | 按 `par_month_id` + `channel_nbr/channel_id` 查；`status_cd='S0X'` 为无效 | 网点无效不会出现在 113 有效对应表里；不要只看 113 缺失就断言网点不存在 |
 | 揽装人有效性 | 113 或 111 `staff_id` | 诊断有效网点下是否无有效揽装人，或揽装人是否无效 | 111 揽装人月表 `zone_gz_yz.dwd_yz_sales_man_mon_final` | 用 `staff_id` 关联；`status_cd='S0X'` 为无效；历史账期按 `par_month_id` 对齐 | `sales_code` 不唯一，禁止作为揽装人唯一 JOIN 键 |
 | 国际漫游开通权限 / 国漫开通时间 / IMSI | 069 `acc_nbr` | 用户要判断号码是否开通国际漫游权限，或输出开通国漫权限时间、G/L IMSI | 114 国际漫游数据表 `dws_ctg.dws_mktag_download_share_guoman_label` | `069.acc_nbr = 114.msisdn`；按用户指定统计日过滤 `114.yyyymmdd`；`reserv2` 为开通国漫权限时间 | `yyyymmdd` 是日分区/统计日，不是 069 账期；同一号码多日可能多行，未指定日期时需确认取最新还是取区间 |
+| 主卡号码 | 附件副卡号码 `acc_nbr` | 用户给副卡号码清单，要求补对应主卡号码 | 069 全业务资料表 `dwm_yz_tb_comm_cm_all_final` | `附件.acc_nbr = 069.acc_nbr` 且 `069.par_month_id=${month_id}`；移动号码建议加 `069.prod_type=30`；输出 `069.zk_acc_nbr` | 不需要额外补表；不默认加 `is_vice_card=1`；附件驱动需保留原序号并核对输入/输出行数 |
 | 7 级地址 ID / 7 级地址名称 | 069 `serv_addr_id` | 用户给号码/宽带/接入号清单，要回填标准装机地址所属 7 级地址 | 079 地址维表 `zone_gz_yz.dwd_yz_addr_final` | 先按 `附件.acc_nbr = 069.acc_nbr` 且 `069.par_month_id=${month_id}` 取 `serv_id/serv_addr_id`；再 `069.serv_addr_id = cast(addr.id as string)` 取 `addr.addr_id_7`；最后 `cast(addr.addr_id_7 as string)=cast(addr7.id as string)` 且 `addr7.grade=7` 取 `addr7.addr` | `serv_addr_id` 是字符型，地址维表 `id/addr_id_7` 是 decimal；禁止默认 `cast(serv_addr_id as decimal(24,0))`，长地址 ID 可能转换失败或漏数；附件驱动需核对输入/命中/输出行数 |
 | 5 级地址 ID / 5 级地址名称 | 主表 `serv_addr_id` | 用户要按标准装机地址上卷到 5 级地址，或按 5 级地址输出/汇总 | 079 地址维表 `zone_gz_yz.dwd_yz_addr_final` | `主表.serv_addr_id = cast(addr10.id as string)` 取 `addr10.addr_id_6`；再 `cast(addr10.addr_id_6 as string)=cast(addr6.id as string)` 取 `addr6.parentid` 作为 5 级地址 ID；最后 `cast(addr6.parentid as string)=cast(addr5.id as string)` 取 `addr5.addr` | 地址 ID 关联统一转字符；不要把 `serv_addr_id` 强转 decimal；需要名称时建议限制 `addr5.grade=5` 以避免层级错配 |
 | 揽装机构 | `salestaff_subst_id`、`salestaff_branch_id` | 主表只有机构 ID | 018 机构维表 | 分局 `salestaff_subst_id = org_id AND levs=3`；营服 `salestaff_branch_id = org_id AND levs=4` | 多次 JOIN 要检查别名 |
@@ -178,6 +179,14 @@ runtime: true
 - JOIN：`069.acc_nbr = guoman.msisdn`。
 - 必须按用户给定统计日过滤 `guoman.yyyymmdd`；若用户未指定统计日，先确认取最新分区还是取一段时间内曾开通。
 - 输出开通国漫权限时间用 `reserv2`；用户开户时间是 `reserv1`，G/L IMSI 分别是 `reserv3/reserv4`。
+
+### 副卡号码补主卡号码
+
+- 驱动表：用户附件副卡号码清单，保留原始序号和副卡号码。
+- 主表保持 069 全业务资料表：`附件号码 = 069.acc_nbr`，并按用户指定 `par_month_id` 锁号码快照。
+- 移动号码建议加 `069.prod_type=30`，直接输出 `069.zk_acc_nbr` 作为主卡号码。
+- 不默认加 `is_vice_card=1`；该字段可用于理解副卡状态，但不是本场景的默认过滤条件。
+- 输出后核对附件输入行数和结果行数；未命中的号码单独列出。
 
 ### 号码清单导 IMSI
 
