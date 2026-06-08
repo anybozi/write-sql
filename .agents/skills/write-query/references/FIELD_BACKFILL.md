@@ -57,6 +57,7 @@ runtime: true
 | 订单编码 / 订单状态 / 受理时间 | `subs_id`、`subs_code`、`subs_stat_date`、`act_date` | 主表缺订单事实字段 | 040 全业务号码订单表 | 优先 `subs_id`；无 `subs_id` 再看 `serv_id` | 订单表可能一对多，需去重 |
 | 协销人 | 主表通常缺 | 主表无协销字段 | 040；不足再 042/043 协销表 | 按订单键或 `serv_id` 关联，必要时先去重 | 容易放大明细行 |
 | 揽装人 / 销售员 | `sales_id`、`sales_code`、`sales_name`、`sales_man_name`、`staff_id` | 主表缺姓名或工号不完整 | 111 揽装人维表；有效网点下有效揽装人用 113 揽装所属表 | 优先用 `staff_id` 关联；历史账期用 `_mon_final + par_month_id` | 先确认是揽装人、受理人还是协销人；`sales_code` 不唯一 |
+| 客户经理 CRM 编码 / 11 开头 CRM 工号 | 069 `sales_code` | 用户按号码清单要求补客户经理 CRM 编码、人员账号、人员标识 | 115 员工信息表 `dws_crm_cfguse.dws_staff` | 先按附件号码 + `par_month_id` 在 069 取当前 `serv_id/sales_code`；再 `069.sales_code = staff.staff_code`，`staff.city_id='200'`，`staff.staff_account like '11%'`；员工表按 `status_date desc, update_ts desc` 去重取最新 | 115 可能有历史多版本；必须先去重再 JOIN。这里用 `sales_code` 匹配员工表 `staff_code` 补 CRM 工号，不等同于用 `sales_code` 唯一关联 111 揽装人维表 |
 | 合同网点下有效揽装人 / 实际工号数量 | 110 `channel_id`、`billing_cycle_id` | 用户按市场化承包合同、合同编码、合同网点查有效销售人员或实际工号数量 | 113 揽装所属月表 `zone_gz_yz.dwd_yz_sales_man_outlers_mon_final` | `110.channel_id = 113.channel_id` AND `substr(110.billing_cycle_id,1,6)=113.par_month_id`；110 通常加 `shard='200'` 和用户合同清单 | 一个合同账期可能对应多个有效揽装人；实际工号数量用 `count(distinct staff_id)`，不要用 `sales_code` 去重 |
 | 网点有效性 | 用户网点清单 `channel_nbr/channel_id` | 诊断网点为什么无号码/收入，或确认网点是否有效 | 112 网点月表 `zone_gz_yz.dwd_yz_sale_outlers_mon_final` | 按 `par_month_id` + `channel_nbr/channel_id` 查；`status_cd='S0X'` 为无效 | 网点无效不会出现在 113 有效对应表里；不要只看 113 缺失就断言网点不存在 |
 | 揽装人有效性 | 113 或 111 `staff_id` | 诊断有效网点下是否无有效揽装人，或揽装人是否无效 | 111 揽装人月表 `zone_gz_yz.dwd_yz_sales_man_mon_final` | 用 `staff_id` 关联；`status_cd='S0X'` 为无效；历史账期按 `par_month_id` 对齐 | `sales_code` 不唯一，禁止作为揽装人唯一 JOIN 键 |
@@ -68,6 +69,7 @@ runtime: true
 | 状态 / 动作含义 | `subs_stat`、`action_id`、`subs_stat_reason` | 需要解释或过滤码值 | `D_experience/dictionaries/{field}.md` | 不 JOIN，直接查码值后写 WHERE | WHERE 禁止中文状态 |
 | **服务状态 `state`（069）** | **`state`**（码值） | **输出状态字段或用户说「状态/号码状态」** | **`dws_crm_cfguse.dws_attr_value`**（`tables/015_字典表视图.md`） | `attr_id='4000000201'` AND `attr_value = cast(state as string)` → **`attr_value_name`** | **默认同时输出 `state` 码值与中文名**；勿用 `is_cancel_user` 等代替，除非用户明确要规模口径 |
 | **产品规格属性 / 特性值** | 主表通常无 | 用户要主产品 `attr_id` 特性码值；历史/拆机前某月 | **105 特性资料表**（`tables/105_特性资料表.md`） | 月表 `iodata_ods_month_city.tb_pre_cm_attr_all_mon`：`serv_id` + `par_month_id` + `par_corp_id='200'` + `attr_id` | 历史必须用月表；日表 `tb_pre_cm_attr_all` 只在网 |
+| **IMSI / 号码 IMSI** | 069 `acc_nbr` | 用户给号码清单，要导出号码对应 IMSI | **105 特性资料表**（`tables/105_特性资料表.md`） | 先按 `069.acc_nbr + 069.par_month_id` 定位 `serv_id`；再 `069.serv_id = 105.serv_id`，过滤 `105.attr_id='200000103'`，输出 `105.attr_value1` | 未给账期需确认号码在网月；历史月用 105 月表并按 `par_month_id` 对齐；不要用 `dws_crm_cust.dws_prod_inst_attr` 或 114 国漫表替代 |
 | **附属产品属性 / 附属产品特性值** | 主表通常无 | 用户要附属产品 `attr_id` 特性码值；历史/拆机前某月 | **106 附属产品资料表**（`tables/106_附属产品资料表.md`） | 月表 `iodata_ods_month_city.rpt_comm_cm_subserv_mon`：`serv_id` + `par_month_id` + `par_corp_id='200'` + `attr_id` | 勿与 105 混用；历史必须用月表 |
 | **特性值中文名** | `attr_value1`（码值） | 输出产品规格或附属产品属性且要中文 | **`dws_crm_cfguse.dws_attr_value`** | `a.attr_id=b.attr_id` AND `a.attr_value1=b.attr_inner_value` AND `b.city_id='200'` → **`attr_value_name`** | 用 **`attr_inner_value`**，不是 `state` 的 `attr_value`；105/106 通用 |
 
@@ -144,6 +146,14 @@ runtime: true
 - 需要细分揽装人无效时，用 111 揽装人月表按 `staff_id` 回查；`status_cd='S0X'` 为无效揽装人。
 - 业务解释：无效网点、有效网点但无揽装人、有效网点但揽装人无效，均不会发展号码和收入，因为网点号码和收入归属通过有效揽装人打标。
 
+### 号码清单补客户经理 CRM 编码
+
+- 驱动表：用户附件号码清单，保留原始序号和号码。
+- 先补 069 全业务资料表：`附件号码 = 069.acc_nbr`，并按用户指定 `par_month_id` 锁号码快照，取当前 `serv_id/sales_code`。
+- 再补 115 员工信息表：`069.sales_code = staff.staff_code`，固定 `staff.city_id='200'`、`staff.staff_account like '11%'`。
+- 员工表 `dws_crm_cfguse.dws_staff` 可能有历史记录，必须先用 `row_number() over(partition by staff_code order by status_date desc, update_ts desc)` 取最新，再回填 `staff_name/staff_id/staff_account`。
+- 如果附件号码在 069 未命中 `serv_id`，单独输出核查清单，可能是拆机、账期不在网或号码不一致。
+
 ### 国际漫游开通权限补字段
 
 - 基础号码、客户名、产品类型、局向等属性仍优先从 069 全业务资料表圈定。
@@ -151,6 +161,14 @@ runtime: true
 - JOIN：`069.acc_nbr = guoman.msisdn`。
 - 必须按用户给定统计日过滤 `guoman.yyyymmdd`；若用户未指定统计日，先确认取最新分区还是取一段时间内曾开通。
 - 输出开通国漫权限时间用 `reserv2`；用户开户时间是 `reserv1`，G/L IMSI 分别是 `reserv3/reserv4`。
+
+### 号码清单导 IMSI
+
+- 驱动表：用户附件号码清单，保留原始序号和号码。
+- 先补 069 全业务资料表：`附件号码 = 069.acc_nbr`，并按用户指定 `par_month_id` 锁号码在网快照，取 `serv_id`。
+- 再补 105 特性资料表：`069.serv_id = attr.serv_id`，`attr.attr_id='200000103'`，输出 `attr.attr_value1` 为 IMSI。
+- 当前在网可用 105 日表；历史账期必须用 105 月表 `iodata_ods_month_city.tb_pre_cm_attr_all_mon`，并按 `par_month_id` 与 069 账期对齐。
+- 不使用 `dws_crm_cust.dws_prod_inst_attr`；该表在本知识库中不作为独立补表路径沉淀。
 
 ### 种子 serv_id + 拆机前一月产品规格/附属产品属性
 

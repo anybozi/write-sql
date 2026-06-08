@@ -70,6 +70,7 @@ runtime: true
 - **拆机默认口径**：未特别声明「物理拆机」时，默认 **逻辑拆机**（069 `is_cancel_user=1` + `hist_create_date`）；物理拆机（`is_wl_cancel_user=1` + `wl_cancel_subs_stat_date`）需用户特说明。逻辑拆机不一定有拆机订单。
 - 069 拆机标签按账期快照：**仅拆机当月** `par_month_id` 分区下才有 `is_cancel_user=1`；反查拆机月时 `par_month_id` 即拆机月。
 - 用户说「属性 / attr_id / 特性值」时：上下文有 **附属产品 / `sub_prod_id`** → 106；否则默认 **105 产品规格属性**。
+- 用户说「IMSI / 号码 IMSI / 根据号码导 IMSI」时，默认归入 **105 产品规格属性**；先用 069 按 `acc_nbr + par_month_id` 定位 `serv_id`，再用 105 `attr_id='200000103'` 取 IMSI。
 - 要订单编码、订单状态、受理时间、协销人等订单事实字段时，先补 040 全业务号码订单表；040 不足再看协销专表。
 - 专项产品表只在用户明确点名专项，或通用主表字段明确不足时使用。
 
@@ -86,6 +87,7 @@ runtime: true
 | 状态 / 号码状态 / 用户状态 | 服务状态码 + 中文名 | 069 全业务资料表 | **`state`**（码值）；中文 **`dws_attr_value.attr_value_name`**（`attr_id='4000000201'`） | **默认字段是 `state`，不是 `is_cancel_user` 等**；交付需 **码值 + 中文名**；详见 `FIELD_BACKFILL.md`、`VC-20260520-002` |
 | 双线 / 互联网专线 / 组网专线 | 专线类双线号码 | 069 全业务资料表 | `prod_type2 IN (60,70,71)`；60=互联网专线，70/71=组网专线 | 双线速率可取 069 或 033 的 `speed_value`；月租按需补 033 `yz_cs` |
 | 揽装 / 销售员 | 销售员及所属机构 | 主表自带，缺名称再补维表 | `sales_code`、`sales_man_name`、`salestaff_subst_id` | 机构维表用 `org_id + levs` |
+| 客户经理 CRM 编码 / 11 开头 CRM 工号 | 号码当前揽装人 -> 员工账号 | 069 全业务资料表 -> 115 员工信息表 | 069 `sales_code` = 115 `staff_code`；115 `staff_account like '11%'` | 员工表有历史多版本，按 `status_date desc` 取最新 |
 | 市场化承包合同 / 合同下实际工号 | 结算账单合同网点 + 有效揽装人 | 110 结算账单表 → 113 揽装所属表 | 110 `contractno/contract_name/billing_cycle_id/channel_id`；113 `staff_id/sales_code/sales_man_nbr/sales_man_name` | 账期用 `substr(billing_cycle_id,1,6)` 对齐月表；实际工号数量优先按 `staff_id` 去重 |
 | 无号码收入网点诊断 | 网点有效性 + 揽装人有效性 | 112 网点维表 + 113 揽装所属表 + 111 揽装人维表 | 112 `status_cd`；113 有效网点有效揽装人关系；111 `status_cd` | 113 只含有效组合；缺记录需回查 112/111 区分无效网点、有效网点无揽装人、揽装人无效 |
 | 国际漫游 / 国漫开通 | 国际漫游权限开通号码 | 069 圈号码范围 → 114 国际漫游数据表 | 114 `msisdn/reserv1/reserv2/reserv3/reserv4/yyyymmdd` | `yyyymmdd` 是日分区/统计日；不要与 069 `par_month_id` 混用 |
@@ -100,6 +102,7 @@ runtime: true
 | 拆机（默认） | **逻辑拆机** | 069 全业务资料表（**月表**回溯时） | `is_cancel_user=1`；`hist_create_date` | **默认口径**；不一定有拆机订单；拆机标签仅拆机当月分区 |
 | 物理拆机 | 有拆机订单的物理拆机 | 069 / 086 主宽拆机挽留清单 | `is_wl_cancel_user=1`；`wl_cancel_subs_stat_date` | 需用户**特别声明**；物理拆机 ≠ 逻辑拆机 |
 | 产品规格属性 / 主产品特性 | 主产品规格特性值 | 105 特性资料表（**月表**取历史） | `serv_id` + `attr_id` + `attr_value1`；`par_corp_id='200'` | 历史快照用月表 `tb_pre_cm_attr_all_mon`；日表只在网；**非附属产品** |
+| IMSI / 号码 IMSI | 号码产品规格属性 | 069 全业务资料表 → 105 特性资料表 | 069 `acc_nbr + par_month_id` 定位 `serv_id`；105 `attr_id='200000103'`，输出 `attr_value1` | 未给账期需确认号码在网快照月；不要默认走国际漫游表或 `dws_crm_cust.dws_prod_inst_attr` |
 | 附属产品属性 / 附属产品特性 | 附属产品特性值 | 106 附属产品资料表（**月表**取历史） | `serv_id` + `attr_id` + `attr_value1`；`sub_prod_id` 可带出；`par_corp_id='200'` | 月表 `rpt_comm_cm_subserv_mon`；日表 `rpt_comm_cm_subserv` 只在网 |
 | 竣工 | 订单状态=竣工 | 任意带 `subs_stat` 的订单表 | `subs_stat='301200'` | **默认作 `is_jg` 标记列输出，不进 WHERE**；过滤竣工与否要看用户意图 |
 | 撤单 / 作废 | 订单状态原因 | 任意带 `subs_stat_reason` 的订单表 | `subs_stat_reason IN ('1200','1300')` | **发展量统计必加 `COALESCE(subs_stat_reason,'-1') NOT IN ('1200','1300')` 排除** |
@@ -137,6 +140,7 @@ runtime: true
 |----------|----------|---------------|
 | 揽装人 / 销售员姓名 | `sales_man_name` 或 `sales_name` | 主表（041/069/040 等）自带；缺则查表 md |
 | 揽装人工号 | `sales_code` | 主表自带 |
+| 客户经理 CRM 编码 / 11 开头 CRM 工号 | `staff_account` | 先用 069 `sales_code` 定位当前揽装人，再补 115 员工信息表；`sales_code = staff_code`、`city_id='200'`、`staff_account like '11%'`，历史记录按 `status_date desc` 取最新 |
 | 揽装分局 / 揽装局向 | `salestaff_subst_id` / `salestaff_subst_name` | 主表 + 必要时补 018 机构维表（`levs=3`） |
 | 揽装营服 | `salestaff_branch_id` / `salestaff_branch_name` 或 `channel_branch_name` | 用户**明确点名揽装营服**时才用；默认营服走划小 |
 | 受理人 / 受理工号 | `staff_id` / `staff_name` | 040 订单表常见 |
@@ -176,6 +180,8 @@ runtime: true
 | 市场化承包合同下有效揽装人 / 实际工号数量 | 110 结算账单表 `dws_tpss_jszx.dws_settle_bill` | 113 揽装所属表 `_mon_final`；必要时回查 112 网点维表、111 揽装人维表 | 069、订单表、积分表、收入明细表 | 合同、结算账期、网点事实在结算账单表；按 `channel_id + substr(billing_cycle_id,1,6)` 补有效网点下有效揽装人；实际工号数量用 `count(distinct staff_id)` |
 | 无号码收入网点诊断 | 112 网点维表 `_mon_final` | 113 揽装所属表 `_mon_final`；111 揽装人维表 `_mon_final` | 号码表、收入表直接反推网点有效性 | 按账期和网点清单先判断网点是否无效；有效网点在 113 无记录表示无有效揽装人关系，再回查 111 区分揽装人无效 |
 | 国际漫游开通号码 / 国漫权限 | 114 国际漫游数据表 `dws_ctg.dws_mktag_download_share_guoman_label` | 069 全业务资料表补客户、产品、局向等号码属性 | 漫游结算收入表、订单表 | 本表内号码为已开通国际漫游权限号码；按 `msisdn` 关联 069 `acc_nbr`，按 `yyyymmdd` 锁统计日 |
+| 号码清单导 IMSI | 069 全业务资料表 → 105 特性资料表 | 用户附件种子表 | 114 国际漫游数据表、`dws_crm_cust.dws_prod_inst_attr` | 先按号码和账期在 069 找 `serv_id`，再补 105 `attr_id='200000103'` 输出 `attr_value1` |
+| 客户经理 CRM 编码 / 揽装人 11 开头工号 | 069 全业务资料表 | 115 员工信息表 `dws_crm_cfguse.dws_staff` | 111 揽装人维表直接替代员工表 | 附件号码清单先按 `acc_nbr + par_month_id` 在 069 取当前 `serv_id/sales_code`，再补员工表 `staff_account/staff_name/staff_id`；员工表按 `status_date desc` 去重取最新 |
 | 移动续约 | 030 移动续约清单 | 031 移动续约多维表 | 新装/资料表 | 续约动作专项 |
 | 宽带续约 | 032 宽带续约清单 | 096 酒宽续约清单 | - | 按业务对象选 |
 | 双线续约 | 065 双线续约清单 | 033 双线全量清单 | - | 续约 vs 全量区分 |
@@ -222,7 +228,7 @@ runtime: true
 | 产品名称 | 017 产品维表视图 `dws_product` | 必要时城市过滤 |
 | 县分 / 分局 / 营服 | 018 机构维表视图 `dwd_yz_dim_org` | `org_id` 关联；`levs=3/4` |
 | 状态 / 动作码值 | `D_experience/dictionaries/{field}.md` | 不 JOIN，直接查码值 |
-| 揽装网点 / 销售员 | 112 网点维表；111 揽装人维表；113 揽装所属表 | 先确认是网点、揽装人、受理人还是协销人；历史账期用 `_mon_final`；揽装人唯一关联键用 `staff_id` |
+| 揽装网点 / 销售员 | 112 网点维表；111 揽装人维表；113 揽装所属表；115 员工信息表 | 先确认是网点、揽装人、受理人还是协销人；历史账期用 `_mon_final`；揽装人唯一关联键用 `staff_id`；补 11 开头 CRM 工号时用员工表 |
 
 ## 选表决策三问
 
