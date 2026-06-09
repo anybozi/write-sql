@@ -14,7 +14,8 @@ drop table if exists ads_XQGZ2025071101688;
 create table ads_XQGZ2025071101688 as 
 select cast(a.index1 as int) xuhao,a.index2 as fk_acc_nbr,b.zk_acc_nbr
 from zone_gz_yz_3542197512722432 a 
-left join dwm_yz_tb_comm_cm_all_final b on cast(a.index2 as varchar(96)) = b.acc_nbr and b.par_month_id = 202507 and b.prod_type = 30
+left join dwm_yz_tb_comm_cm_all_final b on cast(a.index2 as varchar(96)) = b.acc_nbr and b.par_month_id = 202507
+ and b.prod_type = 30
 order by xuhao;
 
 -- 检查数量是否与附件号码数量一致
