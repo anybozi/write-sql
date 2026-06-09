@@ -5,7 +5,7 @@ runtime: true
 
 # Join Planning / 字段缺口补表
 
-用于主表已确认、字段盘点完成后。原则：主表字段够用就不补表；只有缺字段、只有 ID/编码无名称、或用户明确要求其它事实字段时才补表。
+用于主表已确认、字段盘点完成后的**通用**补表决策。原则：主表字段够用就不补表。专项场景完整补表步骤见 `scenarios/SC-*.md`，本文件不重复展开。
 
 ## 补表决策树
 
@@ -58,15 +58,13 @@ runtime: true
 | 订单编码 / 订单状态 / 受理时间 | `subs_id`、`subs_code`、`subs_stat_date`、`act_date` | 主表缺订单事实字段 | 040 全业务号码订单表 | 优先 `subs_id`；无 `subs_id` 再看 `serv_id` | 订单表可能一对多，需去重 |
 | 协销人 | 主表通常缺 | 主表无协销字段 | 040；不足再 042/043 协销表 | 按订单键或 `serv_id` 关联，必要时先去重 | 容易放大明细行 |
 | 揽装人 / 销售员 | `sales_id`、`sales_code`、`sales_name`、`sales_man_name`、`staff_id` | 主表缺姓名或工号不完整 | 111 揽装人维表；有效网点下有效揽装人用 113 揽装所属表 | 优先用 `staff_id` 关联；历史账期用 `_mon_final + par_month_id` | 先确认是揽装人、受理人还是协销人；`sales_code` 不唯一 |
-| 客户经理 CRM 编码 / 11 开头 CRM 工号 | 069 `sales_code` | 用户按号码清单要求补客户经理 CRM 编码、人员账号、人员标识 | 115 员工信息表 `dws_crm_cfguse.dws_staff` | 先按附件号码 + `par_month_id` 在 069 取当前 `serv_id/sales_code`；再 `069.sales_code = staff.staff_code`，`staff.city_id='200'`，`staff.staff_account like '11%'`；员工表按 `status_date desc, update_ts desc` 去重取最新 | 115 可能有历史多版本；必须先去重再 JOIN。这里用 `sales_code` 匹配员工表 `staff_code` 补 CRM 工号，不等同于用 `sales_code` 唯一关联 111 揽装人维表 |
-| 合同网点下有效揽装人 / 实际工号数量 | 110 `channel_id`、`billing_cycle_id` | 用户按市场化承包合同、合同编码、合同网点查有效销售人员或实际工号数量 | 113 揽装所属月表 `zone_gz_yz.dwd_yz_sales_man_outlers_mon_final` | `110.channel_id = 113.channel_id` AND `substr(110.billing_cycle_id,1,6)=113.par_month_id`；110 通常加 `shard='200'` 和用户合同清单 | 一个合同账期可能对应多个有效揽装人；实际工号数量用 `count(distinct staff_id)`，不要用 `sales_code` 去重 |
-| 网点有效性 | 用户网点清单 `channel_nbr/channel_id` | 诊断网点为什么无号码/收入，或确认网点是否有效 | 112 网点月表 `zone_gz_yz.dwd_yz_sale_outlers_mon_final` | 按 `par_month_id` + `channel_nbr/channel_id` 查；`status_cd='S0X'` 为无效 | 网点无效不会出现在 113 有效对应表里；不要只看 113 缺失就断言网点不存在 |
-| 揽装人有效性 | 113 或 111 `staff_id` | 诊断有效网点下是否无有效揽装人，或揽装人是否无效 | 111 揽装人月表 `zone_gz_yz.dwd_yz_sales_man_mon_final` | 用 `staff_id` 关联；`status_cd='S0X'` 为无效；历史账期按 `par_month_id` 对齐 | `sales_code` 不唯一，禁止作为揽装人唯一 JOIN 键 |
-| 国际漫游开通权限 / 国漫开通时间 / IMSI | 069 `acc_nbr` | 用户要判断号码是否开通国际漫游权限，或输出开通国漫权限时间、G/L IMSI | 114 国际漫游数据表 `dws_ctg.dws_mktag_download_share_guoman_label` | `069.acc_nbr = 114.msisdn`；按用户指定统计日过滤 `114.yyyymmdd`；`reserv2` 为开通国漫权限时间 | `yyyymmdd` 是日分区/统计日，不是 069 账期；同一号码多日可能多行，未指定日期时需确认取最新还是取区间 |
-| 移动投诉号码对应套内宽带号 | 附件投诉号码 `acc_nbr`、投诉月份 `ts_month` | 投诉号码为移动号，但需求要匹配移机订单 | 069 全业务资料月表 `dwm_yz_tb_comm_cm_all_mon_final` | 第一步按 `附件.acc_nbr = 069.acc_nbr` 且 `附件.ts_month = 069.par_month_id` 取 `rh_tc_id/prod_type`；第二步同 `rh_tc_id + par_month_id` 找 `prod_type=40 and is_rh_ykj=1 and coalesce(prod_type2,0)<>50` 的宽带 `acc_nbr`；生成 `gl_acc = case when prod_type=30 then rhkd_acc_nbr else 附件.acc_nbr end` | 同一融合套餐可能异常多宽带，需核对转换前后行数；按用户确认，本场景按套内关系，不额外按客户名/客户编码校验 |
-| 主卡号码 | 附件副卡号码 `acc_nbr` | 用户给副卡号码清单，要求补对应主卡号码 | 069 全业务资料表 `dwm_yz_tb_comm_cm_all_final` | `附件.acc_nbr = 069.acc_nbr` 且 `069.par_month_id=${month_id}`；移动号码建议加 `069.prod_type=30`；输出 `069.zk_acc_nbr` | 不需要额外补表；不默认加 `is_vice_card=1`；附件驱动需保留原序号并核对输入/输出行数 |
-| 7 级地址 ID / 7 级地址名称 | 069 `serv_addr_id` | 用户给号码/宽带/接入号清单，要回填标准装机地址所属 7 级地址 | 079 地址维表 `zone_gz_yz.dwd_yz_addr_final` | 先按 `附件.acc_nbr = 069.acc_nbr` 且 `069.par_month_id=${month_id}` 取 `serv_id/serv_addr_id`；再 `069.serv_addr_id = cast(addr.id as string)` 取 `addr.addr_id_7`；最后 `cast(addr.addr_id_7 as string)=cast(addr7.id as string)` 且 `addr7.grade=7` 取 `addr7.addr` | `serv_addr_id` 是字符型，地址维表 `id/addr_id_7` 是 decimal；禁止默认 `cast(serv_addr_id as decimal(24,0))`，长地址 ID 可能转换失败或漏数；附件驱动需核对输入/命中/输出行数 |
-| 5 级地址 ID / 5 级地址名称 | 主表 `serv_addr_id` | 用户要按标准装机地址上卷到 5 级地址，或按 5 级地址输出/汇总 | 079 地址维表 `zone_gz_yz.dwd_yz_addr_final` | `主表.serv_addr_id = cast(addr10.id as string)` 取 `addr10.addr_id_6`；再 `cast(addr10.addr_id_6 as string)=cast(addr6.id as string)` 取 `addr6.parentid` 作为 5 级地址 ID；最后 `cast(addr6.parentid as string)=cast(addr5.id as string)` 取 `addr5.addr` | 地址 ID 关联统一转字符；不要把 `serv_addr_id` 强转 decimal；需要名称时建议限制 `addr5.grade=5` 以避免层级错配 |
+| 客户经理 CRM 编码 / 11 开头 CRM 工号 | 069 `sales_code` | 号码清单补 CRM 工号 | 115 员工信息表 | → `SC-001` | 员工表历史多版本须去重 |
+| 合同网点下有效揽装人 / 实际工号数量 | 110 `channel_id` | 合同下有效揽装人 | 113 揽装所属月表 | → `SC-007` | 工号数量按 `staff_id` 去重 |
+| 网点有效性 / 揽装人有效性 | 网点/揽装人清单 | 无号码收入网点诊断 | 112、113、111 月表 | → `SC-007` | 113 缺记录须回查 112/111 |
+| 国际漫游开通权限 / 国漫时间 / G-L IMSI | 069 `acc_nbr` | 国漫权限开通 | 114 国际漫游数据表 | → `SC-002` | `yyyymmdd` ≠ 069 账期 |
+| 移动投诉号码对应套内宽带号 | 附件投诉号码 | 移机订单匹配前转宽带 | 069 月表 | → `SC-004` | 生成 `gl_acc` 再关联 118 |
+| 主卡号码 | 附件副卡 `acc_nbr` | 副卡查主卡 | 069（不额外补表） | 069 `zk_acc_nbr` | 不默认 `is_vice_card=1` |
+| 7 级/5 级地址 ID/名称 | 069 `serv_addr_id` | 号码清单补地址层级 | 079 地址维表 | → `SC-006` | 地址 ID 统一转字符 |
 | 揽装机构 | `salestaff_subst_id`、`salestaff_branch_id` | 主表只有机构 ID | 018 机构维表 | 分局 `salestaff_subst_id = org_id AND levs=3`；营服 `salestaff_branch_id = org_id AND levs=4` | 多次 JOIN 要检查别名 |
 | 双线速率 | 069 `speed_value`；033 `speed_value` | 主路径已在 069 时不补表；已补 033 或用户指定双线清单口径时可取 033 | 033 双线全量清单（可选） | 若补 033，按 `acc_nbr + par_month_id` 关联 | 不要只为速率强行补 033；两边均可取时跟随主路径 |
 | 双线月租 | 033 `yz_cs` | 069 不提供双线月租或用户明确要月租 | 033 双线全量清单 | `主表.acc_nbr = 033.acc_nbr` 且 `主表.par_month_id = 033.par_month_id` | 033 同号码同月可能多行，必要时按 `load_date` 去重 |
@@ -74,7 +72,7 @@ runtime: true
 | 状态 / 动作含义 | `subs_stat`、`action_id`、`subs_stat_reason` | 需要解释或过滤码值 | `D_experience/dictionaries/{field}.md` | 不 JOIN，直接查码值后写 WHERE | WHERE 禁止中文状态 |
 | **服务状态 `state`（069）** | **`state`**（码值） | **输出状态字段或用户说「状态/号码状态」** | **`dws_crm_cfguse.dws_attr_value`**（`tables/015_字典表视图.md`） | `attr_id='4000000201'` AND `attr_value = cast(state as string)` → **`attr_value_name`** | **默认同时输出 `state` 码值与中文名**；勿用 `is_cancel_user` 等代替，除非用户明确要规模口径 |
 | **产品规格属性 / 特性值** | 主表通常无 | 用户要主产品 `attr_id` 特性码值；历史/拆机前某月 | **105 特性资料表**（`tables/105_特性资料表.md`） | 月表 `iodata_ods_month_city.tb_pre_cm_attr_all_mon`：`serv_id` + `par_month_id` + `par_corp_id='200'` + `attr_id` | 历史必须用月表；日表 `tb_pre_cm_attr_all` 只在网 |
-| **IMSI / 号码 IMSI** | 069 `acc_nbr` | 用户给号码清单，要导出号码对应 IMSI | **105 特性资料表**（`tables/105_特性资料表.md`） | 先按 `069.acc_nbr + 069.par_month_id` 定位 `serv_id`；再 `069.serv_id = 105.serv_id`，过滤 `105.attr_id='200000103'`，输出 `105.attr_value1` | 未给账期需确认号码在网月；历史月用 105 月表并按 `par_month_id` 对齐；不要用 `dws_crm_cust.dws_prod_inst_attr` 或 114 国漫表替代 |
+| **IMSI / 号码 IMSI** | 069 `acc_nbr` | 号码清单导 IMSI | **105 特性资料表** | → `SC-005` | 勿走 114 国漫表 |
 | **附属产品属性 / 附属产品特性值** | 主表通常无 | 用户要附属产品 `attr_id` 特性码值；历史/拆机前某月 | **106 附属产品资料表**（`tables/106_附属产品资料表.md`） | 月表 `iodata_ods_month_city.rpt_comm_cm_subserv_mon`：`serv_id` + `par_month_id` + `par_corp_id='200'` + `attr_id` | 勿与 105 混用；历史必须用月表 |
 | **特性值中文名** | `attr_value1`（码值） | 输出产品规格或附属产品属性且要中文 | **`dws_crm_cfguse.dws_attr_value`** | `a.attr_id=b.attr_id` AND `a.attr_value1=b.attr_inner_value` AND `b.city_id='200'` → **`attr_value_name`** | 用 **`attr_inner_value`**，不是 `state` 的 `attr_value`；105/106 通用 |
 
@@ -126,16 +124,6 @@ runtime: true
 - 主表 069。
 - 069 已有 `par_month_id`、`subst_name`、`branch_name` 时不补机构维表。
 
-### 号码清单补 7 级地址 ID 和名称
-
-- 读取 `scenarios/SC-006_号码清单补地址层级.md`。
-- 本文件保留硬规则：主表保持 069；补 079；地址 ID 关联统一转字符；不要把 `069.serv_addr_id` 强转为 `decimal(24,0)`。
-
-### 标准装机地址补 5 级地址 ID 和名称
-
-- 读取 `scenarios/SC-006_号码清单补地址层级.md`。
-- 本文件保留硬规则：补 079；路径是 `serv_addr_id -> addr_id_6 -> 6级地址.parentid -> 5级地址名称`；地址 ID 关联统一转字符。
-
 ### 双线速率和月租
 
 - 双线定义优先在 069 判断：`prod_type2 IN (60,70,71)`，其中 60=互联网专线，70/71=组网专线。
@@ -157,26 +145,6 @@ runtime: true
 - 优先用 `069.channel_nbr = 112.channel_nbr`；没有 `channel_nbr` 时再考虑 `channel_id`。
 - 历史账期补 112 月表时，必须按 `par_month_id` 对齐；当前口径可用日表。
 
-### 市场化承包合同下查有效揽装人 / 实际工号
-
-- 读取 `scenarios/SC-007_市场化合同有效揽装人.md`。
-- 本文件保留硬规则：合同/结算账期/网点事实来自 110；有效揽装人补 113 月表；实际工号数量按 `staff_id` 去重。
-
-### 无号码收入网点诊断
-
-- 读取 `scenarios/SC-007_市场化合同有效揽装人.md`。
-- 本文件保留硬规则：不要只看 113 缺记录；必须回查 112/111 区分网点无效、有效网点无揽装人、揽装人无效。
-
-### 号码清单补客户经理 CRM 编码
-
-- 读取 `scenarios/SC-001_客户经理CRM编码.md`。
-- 本文件保留硬规则：附件号码先补 069 当前账期 `sales_code`，再补 115；员工表按 `status_date desc, update_ts desc` 去重，固定 `city_id='200'`、`staff_account like '11%'`。
-
-### 国际漫游开通权限补字段
-
-- 读取 `scenarios/SC-002_国际漫游开通权限.md`。
-- 本文件保留硬规则：069 圈号码，114 承接国漫权限；`yyyymmdd` 是统计日；`reserv2` 是国漫权限开通时间。
-
 ### 副卡号码补主卡号码
 
 - 驱动表：用户附件副卡号码清单，保留原始序号和副卡号码。
@@ -184,16 +152,6 @@ runtime: true
 - 移动号码建议加 `069.prod_type=30`，直接输出 `069.zk_acc_nbr` 作为主卡号码。
 - 不默认加 `is_vice_card=1`；该字段可用于理解副卡状态，但不是本场景的默认过滤条件。
 - 输出后核对附件输入行数和结果行数；未命中的号码单独列出。
-
-### 投诉号码补移机订单匹配号码
-
-- 读取 `scenarios/SC-004_投诉号码匹配移机订单.md`。
-- 本文件保留硬规则：投诉移动号先按 069 月表同 `rh_tc_id` 找套内宽带，再用最终关联号 `gl_acc` 关联 118。
-
-### 号码清单导 IMSI
-
-- 读取 `scenarios/SC-005_号码清单导IMSI.md`。
-- 本文件保留硬规则：号码先由 069 定位 `serv_id`，再补 105 `attr_id='200000103'` 输出 `attr_value1`；普通 IMSI 不走 114。
 
 ### 种子 serv_id + 拆机前一月产品规格/附属产品属性
 

@@ -13,16 +13,16 @@ description: 为 CDAP 电信业务数据分析平台编写、改写和审计 Hiv
 
 启动后只读本文件。不要自动读取全量表结构、全量指标或案例。
 
-按阶段读取资料：
+按阶段读取资料（**默认最小加载**，条件追加）：
 
-| 阶段 | 只在需要时读取 |
-|------|----------------|
-| Schema Linking / 主表选择 | `references/TABLE_INDEX.md`、`references/ROUTING.md`、必要时 `references/METRIC_INDEX.md` |
-| Business Semantics / 口径确认 | `references/METRIC_INDEX.md` + 命中单指标文件；已锁主表的 `references/tables/*.md`；必要时 `references/verified-cases/INDEX.md` |
-| Column Linking / 字段映射 | 已锁主表的 `references/tables/*.md` |
-| Join Planning / 缺口补表 | `references/FIELD_BACKFILL.md`、补表对应的 `references/tables/*.md` |
-| SQL Generation + Review | `references/RULES.md`、相关 `references/D_experience/dictionaries/{field}.md`；复杂编排命中时读 `verified-cases/VC-20260520-001`（按 INDEX 相似度） |
-| Complex Scenario / 专项场景 | 需求命中附件驱动、跨表编排或专项诊断时，先读 `references/scenarios/INDEX.md`，再只打开命中的 `SC-*.md` |
+| 阶段 | 默认读取 | 条件追加 |
+|------|----------|----------|
+| Schema Linking / 主表选择 | `references/ROUTING.md` | 用户给生产表名/Hive 名 → `TABLE_INDEX.md`；命中标准指标名 → `METRIC_INDEX.md` |
+| Business Semantics / 口径确认 | 已锁主表 `references/tables/*.md` | 标准指标 → `METRIC_INDEX.md` + 单指标文件；复杂编排 → `verified-cases/INDEX.md` |
+| Column Linking / 字段映射 | 已锁主表 `references/tables/*.md` | — |
+| Join Planning / 缺口补表 | `references/FIELD_BACKFILL.md`、补表 `tables/*.md` | 命中专项 → `scenarios/SC-*.md`（完整补表步骤以 SC 为准） |
+| SQL Generation + Review | `references/RULES.md`、相关 `dictionaries/{field}.md` | 命中专项 → `scenarios/SC-*.md` 风险审计/自检；复杂 CTAS → `verified-cases/VC-20260520-001` |
+| Complex Scenario / 专项场景 | `references/scenarios/INDEX.md` → 命中 `SC-*.md` | 专项硬规则**只读 SC**，不回读 ROUTING/RULES/FIELD_BACKFILL 中的重复展开 |
 
 ## 运行时禁读
 
@@ -98,55 +98,15 @@ description: 为 CDAP 电信业务数据分析平台编写、改写和审计 Hiv
 
 ### 2. Schema Linking / 主表选择
 
-优先级：
+优先级：用户确认 > 标准指标 > `ROUTING.md` > `TABLE_INDEX.md`（仅查 Hive 名/file_path）> 表文档。
 
-1. 用户已确认的生产表名、字段和业务规则。
-2. 标准指标命中后的技术口径与表来源。
-3. `ROUTING.md` 的主表路由经验。
-4. `TABLE_INDEX.md` + 表文档的业务事实、粒度和分区。
-
-规则：
-
-- 用户已指定主表时，跳过泛化路由，直接盘该表字段。
-- 主表由“业务事实发生在哪里”决定，不由字段名相似决定。
-- 输出 1 张拟用主表和最多 2 张备选表；列出生产表名、表文档路径、选择理由。
-- 表名有历史名 / 生产名漂移时，必须显式让用户校对生产表名。
-
-输出“主表确认”，等待用户确认。
-
-格式：
-
-| 类型 | 表名 | 生产表名 | 表文档 | 理由 | 风险/备注 |
-|------|------|----------|--------|------|----------|
-| 拟用主表 |  |  |  |  |  |
-| 备选表 1 |  |  |  |  |  |
-| 备选表 2 |  |  |  |  |  |
-
-另列“不选择的表及原因”，防止被字段名带偏。
+规则：主表由业务事实决定；用户已指定主表则跳过泛化路由；生产表名漂移须让用户校对。低置信度时输出「主表确认」块（见分步确认协议 §3），含拟用主表、最多 2 张备选表及不选表原因。
 
 ### 3. Business Semantics / 口径确认
 
 命中以下词时必须先确认口径：新装、入网、发展量、订购、互换、竣工、到达、在网、出账、有效、活跃、拆机、销户、续约、降档、收入、积分、怎么算、匹配规则。
 
-检索顺序：
-
-1. 标准指标：读 `METRIC_INDEX.md`，再读命中的单指标文件。
-2. 主表附注：读已锁主表的 frontmatter、字段说明和“本表常用条件速查”。
-3. 路由经验：读 `ROUTING.md` 的相关场景。
-4. Verified case：必要时读 `verified-cases/INDEX.md` 和命中案例。
-5. 仍无稳定口径时，标注“未找到稳定口径”，请用户确认生产口径。
-
-输出业务口径、技术过滤条件、口径来源、与主表关系，等待用户确认。
-
-格式：
-
-| 口径项 | 技术落点 | 来源 | 待确认 |
-|--------|----------|------|--------|
-| 业务口径名称 |  |  |  |
-| 时间字段 |  |  |  |
-| 状态/动作过滤 |  |  |  |
-| 客群/产品范围 |  |  |  |
-| 与主表关系 |  |  |  |
+检索顺序：标准指标（`METRIC_INDEX` + 单指标文件）→ 主表附注 → `ROUTING.md` → verified case → 标注「未找到稳定口径」请用户确认。需展开时输出「业务口径确认」块（见分步确认协议 §4）。
 
 ### 4. Column Linking / 字段映射
 
@@ -162,13 +122,7 @@ description: 为 CDAP 电信业务数据分析平台编写、改写和审计 Hiv
 - 表 md 未列字段但业务上可能存在：提示需用户或生产 `DESC` 核对。
 - 不要先猜“直销客户编码”“客户编码”“受理人”“协销人”对应哪个字段。
 
-输出“字段映射确认”，等待用户确认。
-
-格式：
-
-| 需求字段 | 主表候选字段 | 来源表 | 是否满足 | 说明/歧义 |
-|----------|--------------|--------|----------|-----------|
-|  |  |  | 是/否/待确认 |  |
+需展开时输出「字段映射确认」块（见分步确认协议 §5）。
 
 ### 5. Join Planning / 缺口补表
 
@@ -182,14 +136,9 @@ description: 为 CDAP 电信业务数据分析平台编写、改写和审计 Hiv
 - 补表粒度。
 - 是否可能放大行数。
 - 必要过滤，例如销售品维表 `city_id=200`、机构维表 `org_id + levs`。
+- 命中专项场景时，`FIELD_BACKFILL.md` 仅作路由指针，完整步骤读 `SC-*.md`。
 
-输出“补表确认”，等待用户确认。
-
-格式：
-
-| 缺口字段 | 补表 | JOIN 键 | 补表粒度 | 必要过滤 | 行数风险 |
-|----------|------|----------|----------|----------|----------|
-|  |  |  |  |  |  |
+需展开时输出「补表确认」块（见分步确认协议 §5）。
 
 ### 6. SQL Generation + Review
 
@@ -232,7 +181,7 @@ description: 为 CDAP 电信业务数据分析平台编写、改写和审计 Hiv
 
 - 新业务术语或选表经验：补 `references/ROUTING.md`（术语映射 / 主表路由表 / 术语→字段反查）。
 - 新字段补表规则：补 `references/FIELD_BACKFILL.md`。
-- 新硬规则或反模式：补 `references/RULES.md`（审计清单 / 专项审计项）。
+- 新硬规则或反模式：补 `references/RULES.md`（通用审计清单）；**专项链路只回填 `scenarios/`，不在 ROUTING/RULES/FIELD_BACKFILL 写长规则**。
 - 新码值：补对应 `references/D_experience/dictionaries/{field}.md`。
 - 新复杂专项链路、附件驱动流程或跨表诊断：优先补 `references/scenarios/SC-*.md`，并在 `references/scenarios/INDEX.md` 加一行；核心文件只保留短入口。
 - 新案例模板：在 `references/verified-cases/` 加 `VC-YYYYMMDD-NNN_<语义>.md`，并在 `verified-cases/INDEX.md` 加一行（注明「适用 / 不适用」）。
