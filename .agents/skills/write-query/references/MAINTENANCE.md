@@ -63,3 +63,9 @@ python .claude/skills/write-query/scripts/lint_metric_index.py
 
 - 老 D 层经验已并入 `ROUTING` / `FIELD_BACKFILL` / `RULES`；勿再编辑 `_archive/`。
 - 修改 ROUTING / FIELD_BACKFILL / RULES 时，检查是否与其它文件重复；重复则删副本、留指针。
+- **已废弃 table_id**：`013` 全业务资料表已合并入 `069`；勿再新建 `tables/013_*.md` 或在索引中登记 013。
+
+## 表文档合并原则
+
+- 同 Hive 表只保留一个 `table_id` 与一份 A 层表文档（字段最全、含 frontmatter 者优先）。
+- 合并后：删重复表文档、删 `TABLE_INDEX` 重复行、全库引用统一指向保留的 `table_id`。
