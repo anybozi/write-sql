@@ -85,7 +85,7 @@ runtime: true
 - 用户已明确主表、字段规则或生产经验时，以用户规则为准。
 - 标准指标命中时，以 `METRIC_INDEX.md` 和单指标技术口径约束主表。
 - 任意产品入网量、新装量、到达量，以及常规在网、出账、拆机等全业务规模类需求，优先看 069 全业务资料表。
-- 069 全业务资料表分日表和月表：近半年账期优先日表 `dwm_yz_tb_comm_cm_all_final`，更早历史账期走月表 `dwm_yz_tb_comm_cm_all_mon_final`；日表/月表账期重叠时默认优先日表。
+- 069 日/月表：区间全在近半年内用日表；否则月表能覆盖整段查询账期则全程月表；仅月表缺最新月时用日表补缺口 UNION。详见 `tables/069_全业务资料表.md`。
 - **历史某月快照 / 拆机前 N 月属性回溯**：069 与特性资料表均走 **月表**（069 `dwm_yz_tb_comm_cm_all_mon_final`、特性 `tb_pre_cm_attr_all_mon`），账期口径保持一致；不要用 069 日表配特性月表。
 - **拆机默认口径**：未特别声明「物理拆机」时，默认 **逻辑拆机**（069 `is_cancel_user=1` + `hist_create_date`）；物理拆机（`is_wl_cancel_user=1` + `wl_cancel_subs_stat_date`）需用户特说明。逻辑拆机不一定有拆机订单。
 - 069 拆机标签按账期快照：**仅拆机当月** `par_month_id` 分区下才有 `is_cancel_user=1`；反查拆机月时 `par_month_id` 即拆机月。
