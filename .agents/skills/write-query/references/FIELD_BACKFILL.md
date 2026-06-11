@@ -36,7 +36,7 @@ runtime: true
 - 只需要状态、动作、原因等码值含义且**仅用于 WHERE 过滤**时，优先读字典 md 写码值，可不 JOIN 字典表。
 - **069.`state` 作为输出字段时**：默认交付 **码值 + 中文名**；补 `dws_crm_cfguse.dws_attr_value`（`attr_id='4000000201'`，`attr_value = state` → `attr_value_name`）。
 - 只需要销售品、产品、机构、销售员等名称补全时，补维表；不要因此改写主表。
-- 需求出现“主体编码 / 主体名称”时，默认指网点经营主体，直接补 112 网点维表；不要全库搜索。
+- 需求出现“主体编码 / 主体名称”时，默认指网点经营主体；**主表为 069 时固定补 113 揽装所属表**（见 `069_全业务资料表.md` 与下文 §069 主体）；其它主表补 112 网点维表；不要全库搜索。
 - 只需要订单状态、受理时间、协销人等订单事实字段时，补订单/协销事实表；不要反向把订单表改成主表。
 - 主表已有中文名称字段且语义明确时，不补维表。
 
@@ -52,7 +52,7 @@ runtime: true
 | 折扣 / 赠金 / 统付金额 / 销售品参数值 | 014 `prod_offer_id`、`serv_id` | 需具体 `param_value` 且 014 已锁在档销售品 | 107 销售品参数表 | 见下文 **§销售品参数值（107）** | 不要用 107 判断在档；`param_code` 不可猜 |
 | SR科目名称 / SR科目路径 / 收入来源 / 计费收入科目 / 账目项 / 税后收入明细 | 069 `serv_id`、`acc_nbr`、客户/产品属性 | 先按项目、客户名、产品分类、号码清单等条件圈定对象，再要科目级收入明细 | 048 全量科目级收入 `dwm_srhx_src_income_list_mon`；最新月可用 `dwm_srhx_src_income_list` | `069.serv_id = 048.serv_id` 且账期一致；048 账期字段用 `month_id`；取 `due_income_name/due_type/data_src_name/col_income_name/acct_item_type_name/fee_all` | 048 是科目/账目项明细，一户一月可能多行；输出明细不随意去重，汇总时按输出维度 `sum(fee_all)` |
 | 产品名称 | `prod_id` | 主表只有产品 ID | 017 产品维表 | `主表.prod_id = product.prod_id` | 先确认产品维表字段名 |
-| 主体编码 / 主体名称 | `channel_nbr`、`channel_id`、`channel_name` | 需求要网点归属经营主体 | 112 网点维表 | 优先 `主表.channel_nbr = 112.channel_nbr`；无 `channel_nbr` 再用 `channel_id`；历史账期用 `_mon_final + par_month_id` | 网点维表日表唯一；历史月按账期对齐，避免拿当前网点覆盖历史 |
+| 主体编码 / 主体名称 | `channel_nbr`、`channel_id`、`channel_name` | 需求要网点归属经营主体 | **069 主表**：113 揽装所属表；**其它主表**：112 网点维表 | 069：优先 `069.channel_nbr = 113.channel_nbr`，见 §069 主体；其它：`主表.channel_nbr = 112.channel_nbr`，无 `channel_nbr` 再用 `channel_id`；历史账期用 `_mon_final + par_month_id` | 113 一网点多揽装人须去重；112 网点日表唯一；历史月按账期对齐 |
 | 机构名称 / 分局 / 营服名称 | 各业务表中的机构 ID，如 `subst_id`、`branch_id`、`branch_org`、`manage_org` | 主表只有机构 ID 无名称 | 018 机构维表 | `业务表机构ID = 018.org_id`；是否限制 `levs` 看需求和来源 ID 语义 | 018 只负责机构 ID 翻译；不要脱离来源字段语义断定是直销客户、产权客户或号码归属 |
 | 落地县分 / 营服名称 | `std_subst_id`、`std_branch_id`、`std_subst_name`、`std_branch_name` | 主表只有 ID 无名称 | 018 机构维表 | `org_id` 关联；按层级限制 | 落地局向不同于划小局向 |
 | 订单编码 / 订单状态 / 受理时间 | `subs_id`、`subs_code`、`subs_stat_date`、`act_date` | 主表缺订单事实字段 | 040 全业务号码订单表 | 优先 `subs_id`；无 `subs_id` 再看 `serv_id` | 订单表可能一对多，需去重 |
@@ -185,9 +185,10 @@ left join summary_ods_day_city.rpt_comm_cm_msparam p
 ### 069 入网 / 到达按网点要主体编码、主体名称
 
 - 主表保持 069。
-- 主体编码、主体名称固定补 112 网点维表，不全库搜索。
-- 优先用 `069.channel_nbr = 112.channel_nbr`；没有 `channel_nbr` 时再考虑 `channel_id`。
-- 历史账期补 112 月表时，必须按 `par_month_id` 对齐；当前口径可用日表。
+- 主体编码、主体名称**固定补 113 揽装所属表**（与 `069_全业务资料表.md` 一致），不全库搜索，**不要**默认改补 112。
+- 优先 `069.channel_nbr = 113.channel_nbr`；一网点多揽装人时按 `channel_nbr` 去重，避免行数放大（详见 `113_揽装所属表.md`）。
+- 113 无记录时再回查 112 网点维表判断网点有效性，不要直接判定主体缺失。
+- 历史账期补 113 月表时，必须按 `par_month_id` 对齐；当前口径可用日表。
 
 ### 副卡号码补主卡号码
 
