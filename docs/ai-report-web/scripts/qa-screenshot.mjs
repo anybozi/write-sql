@@ -53,7 +53,7 @@ for (const viewport of viewports) {
       missing,
       widthOverflow,
       hasTitle: bodyText.includes("AI自然语言取数能力底座"),
-      hasCase: bodyText.includes("主宽入网量（按维汇总）"),
+      hasCase: bodyText.includes("主宽入网出账跟踪") && bodyText.includes("CTAS"),
       heroHeight: heroRect?.height ?? 0,
       scrollHeight: document.documentElement.scrollHeight,
     };
