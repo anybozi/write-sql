@@ -1,0 +1,64 @@
+需求原始内容：
+XQGZ2026052600606
+
+客户广州海力花园酒店有限公司，有198线存量酒宽业务，现在需要甩单办理业务。甩单清单已补充AD部分，请帮忙从系统导出IPTV接入号和AWiFi接入号部分对应业务，补充到甩单清单表中。请处理，谢谢。 
+
+需求梳理：
+根据附件的198线酒宽号码，匹配其在销售品编码为DM0001-848-1-1的销售品套餐下的IPTV接入号和AWiFi接入号
+
+输出字段：
+序号，酒宽号码，IPTV接入号，AWiFi接入号
+
+-- 大宽表匹配这批酒宽号码的服务标识serv_id
+drop table if exists tmp_XQGZ2026052600606_01;
+create table tmp_XQGZ2026052600606_01 row format delimited fields terminated by '\u0001' stored as orc tblproperties('orc.compression' = 'snappy') as 
+select cast(b.index1 as int) xuhao,b.index2 as acc_nbr,a.serv_id 
+from dwm_yz_tb_comm_cm_all_final a 
+join zone_gz_yz_3542197512722432 b on a.acc_nbr = b.index2
+where a.par_month_id = 202605 
+group by b.index1,b.index2,a.serv_id 
+order by xuhao;
+
+-- 检查数目
+select * from tmp_XQGZ2026052600606_01;
+select count(1) from tmp_XQGZ2026052600606_01; -- 198，一致
+
+-- 销售品维表查找销售品编码为DM0001-848-1-1对应的销售品id
+select distinct offer_id,prod_offer_code from dws_crm_cfguse.dws_offer where city_id=200 and prod_offer_code in('DM0001-848-1-1') --500058381
+
+-- 在优惠资料表锁定销售品id下的所有在用号码，用创建时间排序
+drop table if exists tmp_XQGZ2026052600606_02_new;
+create table tmp_XQGZ2026052600606_02_new row format delimited fields terminated by '\u0001' stored as orc tblproperties('orc.compression' = 'snappy') as 
+select a.serv_id  
+,a.msinfo_id  --套餐实例 
+,b.acc_nbr,b.prod_type2 
+,row_number() over(partition by a.serv_id order by a.create_date desc) as paixu  
+from dwd_yz_rpt_comm_cm_msdisc_final a 
+left join dwm_yz_tb_comm_cm_all_final b on a.serv_id=b.serv_id and b.par_month_id=202605 
+where 1=1  and a.par_corp_id='200' 
+and a.prod_offer_id= 500058381;  --锁定上面查询到的offer_id，销售品ID 
+
+-- 通过号码关联，得到酒宽号码的套餐id，取创建时间最新的记录
+drop table if exists tmp_XQGZ2026052600606_03_new;
+create table tmp_XQGZ2026052600606_03_new row format delimited fields terminated by '\u0001' stored as orc tblproperties('orc.compression' = 'snappy') as 
+select a.*,b.msinfo_id
+from tmp_XQGZ2026052600606_01 a 
+left join tmp_XQGZ2026052600606_02_new b on a.serv_id = b.serv_id and b.paixu = 1 
+;
+
+-- 通过套餐id关联，取酒宽在指定销售品套餐下的IPTV接入号与AWiFi接入号
+drop table if exists ads_XQGZ2026052600606;
+create table ads_XQGZ2026052600606 row format delimited fields terminated by '\u0001' stored as orc tblproperties('orc.compression' = 'snappy') as 
+select a.xuhao,a.acc_nbr as kd_acc,b.acc_nbr as ITV_acc,c.acc_nbr as WIFI_acc
+from tmp_XQGZ2026052600606_03_new a 
+left join (select msinfo_id,serv_id,acc_nbr from tmp_XQGZ2026052600606_02_new where prod_type2=50 and paixu=1 group by msinfo_id,serv_id,acc_nbr) b 
+on a.msinfo_id=b.msinfo_id
+left join (select msinfo_id,serv_id,acc_nbr from tmp_XQGZ2026052600606_02_new where acc_nbr like 'WIFI%' and paixu=1 group by msinfo_id,serv_id,acc_nbr) b 
+on a.msinfo_id=b.msinfo_id
+order by a.xuhao;
+
+-- 检查数目
+select * from ads_XQGZ2026052600606;
+select count(1) from ads_XQGZ2026052600606; -- 198，一致
+
+

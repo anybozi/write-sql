@@ -1,0 +1,37 @@
+
+需求原始内容：
+XQGZ2026042302305
+
+根据省公司下发督办的欠费清理工作， 根据巡察要求， 需对其中天翼甄选商城号码（见附件1）提取其中的 子项（如多云端口、云快销、 翼备份、云管家）， 以便判断加快拆机。 烦请协助。 
+
+需求梳理：
+根据附件的号码，取其在指定属性下的属性值
+
+输出字段：
+投诉工单编号，接入号，投诉归档日期，投诉月份，移机订单编码，移机订单竣工时间，移机前所属落地分局，移机前所属落地营服，移机前所属网格单元，移机后所属落地分局，移机后所属落地营服，移机后所属网格单元
+
+
+-- 附件号码清单表为zone_gz_yz_3542197512722432，从大宽表取这批号码的服务标识serv_id和是否拆机标识is_cancel_user
+drop table if exists tmp_XQGZ2026042302305_00;
+create table tmp_XQGZ2026042302305_00 as 
+select serv_id,acc_nbr,is_cancel_user
+from dwm_yz_tb_comm_cm_all_final where par_month_id = 202604 and cast(acc_nbr as string) in (select index1 from zone_gz_yz_3542197512722432)
+group by serv_id,acc_nbr,is_cancel_user;
+
+select * from tmp_XQGZ2026042302305_00;
+select count(1) from tmp_XQGZ2026042302305_00; -- 1885,原1895
+
+
+-- 判断是否拆机，匹配属性表日表summary_ods_day_city.tb_pre_cm_attr_all，取号码的指定属性
+drop table if exists ads_XQGZ2026042302305;
+create table ads_XQGZ2026042302305 as 
+select a.index1,b.serv_id,case when b.serv_id is null or b.is_cancel_user = 1 then '已拆机' else '未拆机' end as is_cj,
+c.attr_value1 as dydk,d.attr_value1 as ybf,e.attr_value1 as ygj,f.attr_value1 as ykx
+FROM  zone_gz_yz_3542197512722432 a 
+left join tmp_XQGZ2026042302305_00 b on cast(a.index1 as string)= cast(b.acc_nbr as string)
+left join summary_ods_day_city.tb_pre_cm_attr_all c on b.serv_id = c.serv_id and c.par_corp_id='200'  and c.attr_id = 500045116
+left join summary_ods_day_city.tb_pre_cm_attr_all d on b.serv_id = d.serv_id and d.par_corp_id='200'  and d.attr_id = 500040209
+left join summary_ods_day_city.tb_pre_cm_attr_all e on b.serv_id = e.serv_id and e.par_corp_id='200'  and e.attr_id = 500040216
+left join summary_ods_day_city.tb_pre_cm_attr_all f on b.serv_id = f.serv_id and f.par_corp_id='200'  and f.attr_id = 500042225
+;
+

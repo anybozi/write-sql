@@ -1,0 +1,42 @@
+
+需求原始内容：
+XQGZ2025022800707
+
+广东省环保技工学校是嵌入一卡通系统放号的翼起来院校，为保证手机放号质量，对停机的用户变更一卡通套餐，现申请提取附件5110户清单状态（正常或停机，停机时间），请领导审批。 
+
+需求梳理：
+根据附件的5110个号码，取号码状态，停机时间
+
+输出字段：
+号码，号码状态，停机时间
+
+
+
+-- 大宽表取号码的状态state和停机时间stop_date，判断是否拆机
+drop table if exists tmp_XQGZ2025022800707;
+create table tmp_XQGZ2025022800707 as
+select cast(a.index1 as int) as xuhao,a.index2 as acc_nbr,
+case when b.is_cancel_user = 1 then '拆机' when b.serv_id is null then '拆机' else '非拆机' end as state_desc,stop_date,state
+from zone_gz_yz_3542197512722432 a
+left join (select serv_id,acc_nbr,is_cancel_user,state,stop_date from ads_yz_tb_comm_cm_all_final where par_month_id = 202503
+    group by serv_id,acc_nbr,is_cancel_user,state,stop_date) b on cast(a.index2 as varchar(96)) = b.acc_nbr order by xuhao;
+select  * from tmp_XQGZ2025022800707;
+select count(*) from tmp_XQGZ2025022800707; -- 5110
+
+-- 翻译state,取状态
+drop table if exists ads_XQGZ2025022800707;
+create table ads_XQGZ2025022800707 as
+select '200' as city_id,a.xuhao,
+(case when length(a.acc_nbr)<2 then '*'
+when length(a.acc_nbr)=2 then concat(SUBSTR(a.acc_nbr,1,1),'*')
+when length(a.acc_nbr)<8 then concat(SUBSTR(a.acc_nbr,1,(length(a.acc_nbr)-2)),'**')
+when length(a.acc_nbr)>=8 then concat(SUBSTR(a.acc_nbr,1,length(a.acc_nbr)-8),'****',SUBSTR(a.acc_nbr,length(a.acc_nbr)-3,length(a.acc_nbr)))
+else '*' end) as acc_nbr,
+case when  a.state_desc = '非拆机' then  b.attr_value_name else a.state_desc end as state_desc,a.stop_date
+from tmp_XQGZ2025022800707 a 
+left join dws_crm_cfguse.dws_attr_value b on a.state=b.attr_value and b.city_id='200' and b.attr_id='4000000201'
+order by a.xuhao;
+
+-- 检查数目
+select  * from ads_XQGZ2025022800707;
+select count(*) from ads_XQGZ2025022800707; -- 5110，一致
