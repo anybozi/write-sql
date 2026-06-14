@@ -7,6 +7,8 @@ description: Use when the user wants to沉淀,迭代,审计, or升级 CDAP/write
 
 把 CDAP SQL 工单案例逐条拆成可复用的 `write-query` 技能知识。核心原则：**案例是证据，不是知识本身**；进入技能的是稳定的找表、补表、口径和审计规则。
 
+总规则：**先判断现有 `write-query` 技能能否实现该案例**。如果现有路由、表文档、补表、口径、审计规则、场景或验证案例组合起来已经能稳定写出正确 SQL，则该案例默认判为 `已覆盖不写入`，不要沉淀案例本身。只有当案例揭示了现有技能缺少的稳定路由、缺字段补表、业务口径或审计规则时，才建议沉淀最小规则。
+
 默认工作方式：**逐案确认**。先分析一个案例，输出可沉淀内容和风险，等待用户确认；确认前不要改 `write-query` 文件。
 
 ## When Triggered
@@ -28,8 +30,9 @@ For each target case, follow this pipeline before proposing any edit:
 2. **还原用户会怎么问**：把工单 SQL 翻译成 1-3 条自然语言需求，不沿用脚本变量名或一次性项目名。
 3. **拆 SQL 事实**：提取业务对象、主事实表、补表、字段、JOIN、过滤、时间口径、分组粒度、去重方式、自检或核数逻辑。
 4. **查现有知识覆盖**：按需读取 `write-query` 资料，判断现有路由、表文档、补表、规则、场景或验证案例是否已经能处理。
-5. **判断沉淀价值**：区分“直接沉淀 / 待核对 / 不沉淀 / 已覆盖不写入”。
-6. **输出待确认方案**：只给可复用知识和风险，不把完整工单 SQL 当作技能内容。
+5. **做技能可实现性判断**：如果现有 `write-query` 能组合出正确 SQL，优先标记 `已覆盖不写入`，只说明实现路径、参数和旧 SQL 中不能照抄的写法。
+6. **判断沉淀价值**：仅对现有技能缺失的稳定知识，区分“直接沉淀 / 待核对 / 不沉淀 / 已覆盖不写入”。
+7. **输出待确认方案**：只给可复用知识和风险，不把完整工单 SQL 当作技能内容。
 
 ## Grounding
 
@@ -45,7 +48,9 @@ Before asking the user anything:
    - `scenarios/INDEX.md` only when the case looks like a reusable complex scenario.
    - `verified-cases/INDEX.md` only when a concrete reusable SQL flow may warrant or match a verified case.
 3. Check whether the knowledge already exists. Do not duplicate an existing rule under a new name.
-4. If existing general `write-query` routing, field backfill, and audit rules already cover the case, do not propose new sedimentation; explain the existing reusable path and any remaining case-specific parameters.
+4. Check whether `write-query` can already implement the case end to end. "Can implement" means the current references can identify the business scene, choose the main table, map required fields, plan joins/backfills, apply filters/time口径, and audit the SQL without adding new stable knowledge.
+5. If existing general `write-query` routing, table docs, field backfill, scenarios, verified cases, and audit rules already cover the case, do not propose new sedimentation; explain the existing reusable path and any remaining case-specific parameters.
+6. If the existing skill can implement the case but the source SQL contains old or risky patterns, treat those patterns as review evidence, not new knowledge. Point to the existing rule that would correct them.
 
 Do not read or edit archived runtime-disabled files unless the user explicitly asks for historical traceability.
 
@@ -58,7 +63,7 @@ Classify each extracted item before deciding where it belongs.
 | 直接沉淀 | Stable across cases; table/field/logic is already verified or clearly reusable | Propose exact target file and concise rule text |
 | 待核对后沉淀 | New table, code value, product/parameter code, external zone table, or field meaning is plausible but not stable | Ask the minimum confirmation question; do not write as a hard rule yet |
 | 不沉淀 | One-off attachment, temp/result table, single customer/project/list, broken SQL syntax, or unverified hard-coded enum | List under “不应沉淀” with reason |
-| 已覆盖不写入 | Existing `write-query` knowledge already handles it | Explain the existing route; do not propose file edits |
+| 已覆盖不写入 | Existing `write-query` knowledge can already implement the case end to end | Explain the existing route and parameters; do not propose file edits |
 
 Directly sediment only stable, reusable knowledge:
 
@@ -67,6 +72,8 @@ Directly sediment only stable, reusable knowledge:
 - 业务口径：stable metric/action/status/time definition.
 - SQL 审计：cross-case generation/review rules and anti-patterns.
 - 专项流程：repeated multi-step CTAS or attachment-driven flows.
+
+Do not sediment merely because a case has a common user phrasing, a useful example SQL, or requires combining several existing rules. Combination cost alone is not a sedimentation reason. Sediment only the missing stable rule that would change future correctness or routing confidence.
 
 ## Target File Decision Tree
 
@@ -159,6 +166,8 @@ If the case is fully covered by existing general rules, still use the shape abov
 - `五、沉淀等级` to `已覆盖不写入`.
 - `六、建议补丁位置` to `不建议修改技能文件`.
 
+When a case is implementable by current `write-query` but not exactly matched by one single route, still prefer `已覆盖不写入`. In `四、已有知识覆盖检查`, explicitly list the existing implementation path, for example: `ROUTING -> 069; FIELD_BACKFILL -> 017/079; RULES -> 地址转字符/脱敏`.
+
 ## What Not To Sediment
 
 Do not write these into runtime knowledge as stable rules:
@@ -170,6 +179,7 @@ Do not write these into runtime knowledge as stable rules:
 - A parameter code, product code, status code, attr_id, or label field unless the user confirms it is reusable or it is verified elsewhere.
 - Full scripts inside `RULES.md`; use concise rules or a scenario / verified case only when needed.
 - Cases that can already be implemented by existing general rules.
+- Cases that only make an existing path more convenient or provide another example, without adding a missing stable route,补表,口径, or审计 rule.
 
 ## Editing Workflow After Confirmation
 
