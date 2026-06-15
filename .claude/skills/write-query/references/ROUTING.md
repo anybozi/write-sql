@@ -182,6 +182,7 @@ runtime: true
 | 客户名（不脱敏） | 041/022 的 `cust_name` | 041 全客群、022 仅商企 |
 | 客户名（脱敏） | `cust_name_tm` | 069 公众客群 |
 | 客户编码 / 直销客户编码 / 产权客户编码 | 候选 `ccust_id`、`cust_code`、`cust_id`、`cust_nbr`；客户映射场景见 108/109 | **不要先猜**；先判断是号码事实表字段，还是产权客户/直销客户映射 |
+| 关联使用人 / 使用客户 | 069 `use_cust_id` 补 108 `cust_name/cust_number` | 号码或服务清单要关联使用人时，先按 `acc_nbr/serv_id + par_month_id` 在 069 圈服务，再用 `use_cust_id = dws_customer.cust_id` 补名称和编码 |
 | 服务号码 / 接入号 | `acc_nbr` | 主表自带 |
 | 服务 ID | `serv_id` | 主表自带 |
 | 订单编码 | `subs_id` / `subs_code` | 040 订单表 |
