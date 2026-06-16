@@ -198,16 +198,18 @@ After the user confirms a case:
 4. If adding or changing a standard metric, update both `METRIC_INDEX.md` and the matching `metrics/*.md`.
 5. Sync `.agents` to `.claude` with:
 
-```bash
-bash scripts/sync_skills.sh sync agents --force
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\sync_skills.ps1 -Mode Sync -From agents -Force
 ```
 
 6. Verify:
 
-```bash
-bash scripts/sync_skills.sh check
-python3 .agents/skills/write-query/scripts/lint_metric_index.py --index .agents/skills/write-query/references/METRIC_INDEX.md
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\sync_skills.ps1 check
+python .agents/skills/write-query/scripts/lint_metric_index.py --index .agents/skills/write-query/references/METRIC_INDEX.md
 ```
+
+On non-Windows environments with a healthy Git Bash, `bash scripts/sync_skills.sh check` remains acceptable. On Windows, prefer the PowerShell script because Git Bash may fail before the repository check with `Win32 error 5`.
 
 7. Report exactly what changed and what remains uncommitted. Do not include unrelated files.
 

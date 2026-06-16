@@ -52,12 +52,14 @@ runtime: false
 ## 提交前检查
 
 ```bash
-# 双入口一致（Windows 可手动 Copy-Item 同步）
-bash scripts/sync_skills.sh check
+# 双入口一致（Windows / PowerShell）
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\sync_skills.ps1 check
 
 # 指标索引校验（可选）
 python .claude/skills/write-query/scripts/lint_metric_index.py
 ```
+
+Git Bash 正常可用时也可运行 `bash scripts/sync_skills.sh check`；Windows 若出现 `Win32 error 5`，以 PowerShell 版脚本为准。
 
 ## 版本与归档
 

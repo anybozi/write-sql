@@ -15,7 +15,8 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 - `.agents/skills/` 是 Codex 入口。
 - `.claude/skills/` 是 Claude Code 入口。
 - 两边都进 Git，作为双入口维护；提交前必须保持内容一致。
-- 使用 `bash scripts/sync_skills.sh check` 检查一致性；需要同步时显式指定方向，例如 `bash scripts/sync_skills.sh sync agents --force`。
+- Windows / PowerShell 环境优先使用 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\sync_skills.ps1 check` 检查一致性；需要同步时显式指定方向，例如 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\sync_skills.ps1 -Mode Sync -From agents -Force`。
+- Git Bash 正常可用时，也可使用 `bash scripts/sync_skills.sh check`；若遇到 `Win32 error 5`，改用 PowerShell 版脚本。
 
 ```
 .agents/skills/

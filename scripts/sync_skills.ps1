@@ -26,6 +26,11 @@
 .PARAMETER ExcludeDirs
     Directory names or wildcard patterns to ignore. Default: *-workspace.
 
+.PARAMETER ByteExact
+    Compare raw bytes instead of normalized text. By default, common text files
+    are compared after normalizing CRLF/CR line endings to LF so Windows checkouts
+    do not report false differences.
+
 .EXAMPLE
     pwsh scripts/sync_skills.ps1
     # Check whether .agents/skills and .claude/skills match.
@@ -48,7 +53,9 @@ param(
 
     [switch]$Force,
 
-    [string[]]$ExcludeDirs = @("*-workspace")
+    [string[]]$ExcludeDirs = @("*-workspace"),
+
+    [switch]$ByteExact
 )
 
 $ErrorActionPreference = "Stop"
@@ -94,7 +101,8 @@ function Test-ExcludedPath {
 function Get-SkillFileMap {
     param(
         [Parameter(Mandatory = $true)][string]$Root,
-        [Parameter(Mandatory = $true)][string[]]$ExcludeDirs
+        [Parameter(Mandatory = $true)][string[]]$ExcludeDirs,
+        [Parameter(Mandatory = $true)][bool]$ByteExact
     )
 
     if (-not (Test-Path $Root)) {
@@ -109,22 +117,49 @@ function Get-SkillFileMap {
         }
 
         $normalized = $relative -replace "\\", "/"
-        $hash = Get-FileHash -Algorithm SHA256 -Path $_.FullName
-        $map[$normalized] = $hash.Hash
+        $map[$normalized] = Get-ComparableFileHash -Path $_.FullName -ByteExact $ByteExact
     }
 
     return $map
+}
+
+function Get-ComparableFileHash {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][bool]$ByteExact
+    )
+
+    $textExtensions = @(
+        ".md", ".txt", ".json", ".yaml", ".yml", ".toml",
+        ".ps1", ".sh", ".py", ".js", ".mjs", ".ts", ".tsx",
+        ".css", ".html", ".xml", ".csv", ".sql"
+    )
+
+    if ($ByteExact -or ($textExtensions -notcontains ([System.IO.Path]::GetExtension($Path).ToLowerInvariant()))) {
+        return (Get-FileHash -Algorithm SHA256 -Path $Path).Hash
+    }
+
+    $text = [System.IO.File]::ReadAllText((Resolve-Path $Path).Path, [System.Text.UTF8Encoding]::new($false, $true))
+    $normalized = $text -replace "`r`n", "`n" -replace "`r", "`n"
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($normalized)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return ([BitConverter]::ToString($sha.ComputeHash($bytes)) -replace "-", "")
+    } finally {
+        $sha.Dispose()
+    }
 }
 
 function Compare-SkillTrees {
     param(
         [Parameter(Mandatory = $true)][string]$AgentsRoot,
         [Parameter(Mandatory = $true)][string]$ClaudeRoot,
-        [Parameter(Mandatory = $true)][string[]]$ExcludeDirs
+        [Parameter(Mandatory = $true)][string[]]$ExcludeDirs,
+        [Parameter(Mandatory = $true)][bool]$ByteExact
     )
 
-    $agents = Get-SkillFileMap -Root $AgentsRoot -ExcludeDirs $ExcludeDirs
-    $claude = Get-SkillFileMap -Root $ClaudeRoot -ExcludeDirs $ExcludeDirs
+    $agents = Get-SkillFileMap -Root $AgentsRoot -ExcludeDirs $ExcludeDirs -ByteExact $ByteExact
+    $claude = Get-SkillFileMap -Root $ClaudeRoot -ExcludeDirs $ExcludeDirs -ByteExact $ByteExact
     $allPaths = @($agents.Keys + $claude.Keys) | Sort-Object -Unique
     $diffs = @()
 
@@ -186,8 +221,9 @@ Write-Host ("Repo:   {0}" -f $RepoRoot)
 Write-Host ("Codex:  {0}" -f $AgentsRoot)
 Write-Host ("Claude: {0}" -f $ClaudeRoot)
 Write-Host ("Exclude dirs: {0}" -f ($ExcludeDirs -join ", "))
+Write-Host ("Compare: {0}" -f ($(if ($ByteExact) { "byte-exact" } else { "normalized text for text files" })))
 
-$diffs = Compare-SkillTrees -AgentsRoot $AgentsRoot -ClaudeRoot $ClaudeRoot -ExcludeDirs $ExcludeDirs
+$diffs = Compare-SkillTrees -AgentsRoot $AgentsRoot -ClaudeRoot $ClaudeRoot -ExcludeDirs $ExcludeDirs -ByteExact ([bool]$ByteExact)
 
 if ($Mode -eq "Check") {
     if ($diffs.Count -eq 0) {
@@ -222,7 +258,7 @@ if ($From -eq "agents") {
     Copy-SkillTree -SourceRoot $ClaudeRoot -TargetRoot $AgentsRoot -ExcludeDirs $ExcludeDirs
 }
 
-$postDiffs = Compare-SkillTrees -AgentsRoot $AgentsRoot -ClaudeRoot $ClaudeRoot -ExcludeDirs $ExcludeDirs
+$postDiffs = Compare-SkillTrees -AgentsRoot $AgentsRoot -ClaudeRoot $ClaudeRoot -ExcludeDirs $ExcludeDirs -ByteExact ([bool]$ByteExact)
 if ($postDiffs.Count -eq 0) {
     Write-Host "Sync complete. Skills are in sync." -ForegroundColor Green
     exit 0
