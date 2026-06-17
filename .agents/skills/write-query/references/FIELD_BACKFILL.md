@@ -54,6 +54,8 @@ runtime: true
 | 名单制管控信息 / 名单制行商类型 / 名单制创建时间 | 直销客户编码 `cust_code`、`ccust_code`；或产权客户编码 `cust_nbr` | 用户明确要求不用主表 `is_mdz`，而用名单制管控清单口径 | 122 名单制管控清单 `ads_yz_mo_ccust_mdz_final`；只有产权客户编码时先补 109 | 主表已有直销客户编码：`主表.cust_code/ccust_code = 122.ccust_code` → `hk_flag/create_date`；只有 `cust_nbr`：先 `cust_nbr = 109.cust_nbr` 取 `ccust_code` 后再补 122 | `is_mdz` 与管控清单口径不同；直销客户编码和产权客户编码不能混用；补表后核对行数 |
 | 身份证号 / 证件号反查服务对象 | 附件证件号、身份证号 | 需求提供证件信息，需要匹配客户名下号码、服务、宽带、状态等业务对象 | 069 全业务资料表 `dwm_yz_tb_comm_cm_all_final` | `附件.证件号 = 069.social_id`；身份证场景加 `069.social_id_type = 1`；匹配后取 `serv_id/acc_nbr/cust_id/cust_nbr/prod_type/state/is_cancel_user` 等，再按需求接后续表 | 一个证件可能对应多个服务；是否加客户名、客户编码、号码等辅助键由需求决定，不强制双键 |
 | 销售品编码 / 名称 | `prod_offer_id`、`kd_prod_offer_id` | 主表只有销售品 ID | 020 销售品维表 | `主表.prod_offer_id = offer.offer_id`；`offer.city_id=200` | 不加城市会错配 |
+| 销售品揽装信息 / 揽装人 / 揽装工号 / 揽装机构 | 销售品编码、`prod_offer_id`、业务月份 | 用户围绕某销售品要揽装人、揽装工号、揽装局向、揽装营服、揽装网点等订单办理归属 | 041 优惠订单表；必要时 020 补销售品编码/名称，018 补机构名称 | 041 按销售品动作和时间圈定订单，输出 `sales_code/sales_man_name/salestaff_*`；揽装局向/营服名称按 `salestaff_subst_id/salestaff_branch_id` 补 018（`levs=3/4`） | 014 是销售品在用资料结果表，适合判断是否叠加/在档；但不作为销售品揽装信息主表。若用户同时要在用结果和揽装信息，应说明 014/041 口径差异，并按需求决定是否做在用校验 |
+| 融合类型 / 新宽新移 / 新宽老移 / 融合套餐价值加分 | 014 `serv_id`、`par_month_id`；或其它服务清单 `serv_id` | 已圈定某批服务后，需要判断是否为融合宽带类型、统计融合套餐数或价值加分 | 069 全业务资料表 `dwm_yz_tb_comm_cm_all_final` / `dwm_yz_tb_comm_cm_all_mon_final` | `主表.serv_id = 069.serv_id` 且 `主表.par_month_id = 069.par_month_id`；输出/过滤 `rh_type_ykj`（如 `新宽带新移动`、`新宽带老移动`）、`is_rh_ykj`、`rh_tc_id`、`rh_tc_value` | 新宽新移/新宽老移口径不在销售品表。若用户问“是否办了/是否叠加某销售品”，先用 014 锁当月已在用销售品，再回 069；只有明确查订单受理/竣工/归档动作时才用 041。统计融合宽带套餐数优先按 `rh_tc_id` 去重，汇总价值加分前先按 `par_month_id,rh_tc_id,rh_tc_value` 去重，避免套餐内多号码重复累计 |
 | 移动主套餐名称 | 069 `cdma_disc_type` 或其它移动事实表主套餐 ID | 主表只有移动主套餐 ID，缺主套餐中文名称 | 019 移动主套餐维表 `metadata_ods_day.md_ft_cdma_disc_config` | `主表.cdma_disc_type = 019.cdma_disc_id` → `cdma_disc_desc` | 主表已自带 `cdma_disc_desc` 时不补；不要与 020 销售品维表混用 |
 | 优惠订单实例补在档资料字段 | 041 `msinfo_id`、`par_month_id` | 以优惠订单/订购动作为主表，但要补 014 在档资料字段、套餐实例字段、到期字段等 | 014 优惠资料表 `ads_yz_rpt_comm_cm_msdisc_final`；历史账期用月表 `dwd_yz_rpt_comm_cm_msdisc_mon_final` | `041.msinfo_id = 014.msobjgrp_id`；月表必须加 `041.par_month_id = 014.par_month_id`；不要默认 `041.msinfo_id = 014.msinfo_id` | 014.`msinfo_id` 已二次加工，主从关系下可能被主实例覆盖；014.`msobjgrp_id` 才是原始实例键。JOIN 后核对行数，必要时按订单或实例去重 |
 | 同套餐实例下的其他号码 | 附件号码、`serv_id`、需求方给的销售品编码 | 通过一个号码定位其所在套餐，再取同套餐实例下其他号码、服务或产品类型 | 014 优惠资料表 `ads_yz_rpt_comm_cm_msdisc_final`；必要时回 069 全业务资料表 | 附件号码先用 069 补 `serv_id`；若入口是销售品编码，先用 020 取 `offer_id` 再在 014 锁入口 `serv_id + prod_offer_id`；取入口行 `msobjgrp_id` 后，用同 `msobjgrp_id` 在 014 找其他 `serv_id/acc_nbr`；需要号码类型、状态、产品分类时再回 069 | `msobjgrp_id` 表示套餐实例，不要把一次案例写成固定 WiFi/IPTV；同套餐可能多号码，默认保留明细，若要一号一行需确认聚合方式 |
@@ -182,6 +184,7 @@ left join summary_ods_day_city.rpt_comm_cm_msparam p
 - 销售品名称补 020，必须 `city_id=200`。
 - 揽装机构补 018，分局 `levs=3`、营服 `levs=4`。
 - 主表已有 `sales_code/sales_man_name` 时不补销售员表。
+- 只要需求要销售品办理的揽装信息，优先 041；014 只用于销售品在用/叠加结果，不承载订单揽装归属。
 
 ### 主宽 / 宽带到达按县分营服
 
