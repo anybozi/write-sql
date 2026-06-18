@@ -41,6 +41,7 @@
 | M-BASIC-BB-012 | 199+宽带拆机量 | 基本面 | 宽带 | 日/月/年 | 宽带离网报表+531离网数据 | 以单指标技术口径 SQL 的 FROM 为准 | metrics/基本面/M-BASIC-BB-012_199+宽带拆机量.md |
 | M-BASIC-BB-013 | 宽带销户数 | 基本面 | 宽带 | 月/年 | 宽带离网报表+531离网数据 | 以单指标技术口径 SQL 的 FROM 为准 | metrics/基本面/M-BASIC-BB-013_宽带销户数.md |
 | M-BASIC-BB-014 | 宽带销户积分 | 基本面 | 宽带 | 月/年 | 宽带离网报表+531离网数据 | 以单指标技术口径 SQL 的 FROM 为准 | metrics/基本面/M-BASIC-BB-014_宽带销户积分.md |
+| M-BASIC-BB-015 | 宽带移机订单 | 基本面 | 宽带 | 月/年 | 移机订单表 | tables/118_移机订单表.md tables/040_全业务号码订单表.md | metrics/基本面/M-BASIC-BB-015_宽带移机订单.md |
 | M-BASIC-DBL-001 | 双线入网线数 | 基本面 | 双线 | 日/月/年 | 双线全量清单 | tables/033_双线全量清单.md | metrics/基本面/M-BASIC-DBL-001_双线入网线数.md |
 | M-BASIC-DBL-002 | 双线入网月租 | 基本面 | 双线 | 日/月/年 | 双线全量清单 | tables/033_双线全量清单.md | metrics/基本面/M-BASIC-DBL-002_双线入网月租.md |
 | M-BASIC-DBL-003 | 双线拆机线数 | 基本面 | 双线 | 日/月/年 | 双线全量清单 | tables/033_双线全量清单.md | metrics/基本面/M-BASIC-DBL-003_双线拆机线数.md |
