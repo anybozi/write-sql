@@ -1,25 +1,26 @@
 import {
+  AlertTriangle,
   ArrowRight,
   CheckCircle2,
+  Clock,
   Database,
   FileCheck2,
   FileCode2,
-  FolderTree,
   GitBranch,
   MessageSquare,
   ShieldCheck,
   Sparkles,
+  Users,
 } from "lucide-react";
-import { FlowCaseMatrix } from "./components/FlowCaseMatrix.jsx";
+import { AnnotatedCaseShot } from "./components/AnnotatedCaseShot.jsx";
 import { caseAge65Demo } from "./data/caseAge65Demo.js";
 
 const navSections = [
   { id: "hero", label: "封面" },
-  { id: "assets", label: "目录" },
-  { id: "flow", label: "流程" },
+  { id: "pain", label: "背景" },
   { id: "case", label: "案例" },
-  { id: "plan", label: "交付" },
-  { id: "summary", label: "总结" },
+  { id: "assets", label: "沉淀" },
+  { id: "roadmap", label: "规划" },
 ];
 
 const assetIconMap = {
@@ -31,49 +32,7 @@ const assetIconMap = {
   case: FileCheck2,
 };
 
-const directoryLines = [
-  { text: ".agents/skills/write-query/" },
-  { text: "├── SKILL.md", asset: "SKILL.md" },
-  { text: "├── scripts/" },
-  { text: "│   ├── audit_sql.py" },
-  { text: "│   └── lint_metric_index.py" },
-  { text: "└── references/" },
-  { text: "    ├── METRIC_INDEX.md", asset: "METRIC_INDEX.md / metrics/" },
-  { text: "    ├── metrics/", asset: "METRIC_INDEX.md / metrics/" },
-  { text: "    │   ├── 基本面/" },
-  { text: "    │   │   ├── M-BASIC-BB-001_主宽入网数.md", hot: true },
-  { text: "    │   │   ├── M-BASIC-BB-002_主宽入网积分.md" },
-  { text: "    │   │   └── M-BASIC-MV-006_移动月入网.md" },
-  { text: "    │   ├── 战新/" },
-  { text: "    │   │   └── M-NEW-SMB-001_量子密话月入网.md" },
-  { text: "    │   └── 专题/" },
-  { text: "    │       ├── M-TOPIC-BB-001_宽带T+n有效率.md" },
-  { text: "    │       └── M-TOPIC-PTS-001_净增积分.md" },
-  { text: "    ├── TABLE_INDEX.md", asset: "TABLE_INDEX.md / tables/" },
-  { text: "    ├── tables/", asset: "TABLE_INDEX.md / tables/" },
-  { text: "    │   ├── 040_全业务号码订单表.md" },
-  { text: "    │   ├── 041_优惠订单表.md" },
-  { text: "    │   ├── 069_全业务资料表.md" },
-  { text: "    │   ├── 014_优惠资料表.md" },
-  { text: "    │   └── 015_字典表视图.md" },
-  { text: "    ├── ROUTING.md", asset: "ROUTING.md" },
-  { text: "    ├── FIELD_BACKFILL.md", asset: "FIELD_BACKFILL.md" },
-  { text: "    ├── RULES.md", asset: "RULES.md" },
-  { text: "    └── verified-cases/", asset: "verified-cases/" },
-  { text: "        ├── VC-20260502-001_网点揽装人汇总.md" },
-  { text: "        ├── VC-20260611-001_附件号码清单实收.md" },
-  { text: "        └── VC-20260611-003_附件客户清单收入.md" },
-];
-
-const assetAnnotationPositions = {
-  "SKILL.md": { line: 1, y: 10 },
-  "METRIC_INDEX.md / metrics/": { line: 7, y: 25 },
-  "TABLE_INDEX.md / tables/": { line: 18, y: 43 },
-  "ROUTING.md": { line: 24, y: 58 },
-  "FIELD_BACKFILL.md": { line: 25, y: 72 },
-  "RULES.md": { line: 26, y: 84 },
-  "verified-cases/": { line: 27, y: 95 },
-};
+const painIconMap = [Users, AlertTriangle, Clock];
 
 /**
  * @param {{ label: string, title: string, desc?: string, inverse?: boolean }} props
@@ -111,129 +70,104 @@ function SectionHeader({ label, title, desc, inverse = false }) {
   );
 }
 
-function AssetDirectory() {
-  const annotations = caseAge65Demo.assetDirectory.map((asset) => ({
-    ...asset,
-    ...(assetAnnotationPositions[asset.name] || {}),
-  }));
-
+// ─────────────────────────────────────────────────
+// 1. 封面
+// ─────────────────────────────────────────────────
+function HeroSection() {
   return (
-    <section id="assets" className="py-20 md:py-24 bg-white">
+    <section
+      id="hero"
+      className="relative flex min-h-screen items-center justify-center overflow-hidden"
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-brand-50 opacity-70" />
+      <div className="absolute left-10 top-20 h-72 w-72 rounded-full bg-brand-200 opacity-20 mix-blend-multiply blur-3xl animate-pulse-slow" />
+      <div
+        className="absolute bottom-20 right-10 h-96 w-96 rounded-full bg-brand-300 opacity-20 mix-blend-multiply blur-3xl animate-pulse-slow"
+        style={{ animationDelay: "1s" }}
+      />
+
+      <div className="container relative z-10 mx-auto px-6 py-20 text-center">
+        <div className="mb-8 inline-flex animate-fade-in items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700">
+          <Sparkles size={16} aria-hidden="true" />
+          <span>CDAP 业务数据 · 自然语言取数能力建设</span>
+        </div>
+        <h1 className="mb-6 animate-slide-up text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
+          <span className="gradient-text">自然语言取数能力建设</span>
+        </h1>
+        <p
+          className="mx-auto mb-5 max-w-3xl animate-slide-up text-xl font-bold text-slate-700 md:text-2xl"
+          style={{ animationDelay: "0.15s" }}
+        >
+          让业务人员通过自然语言描述需求，自动生成可执行、可校验的取数 SQL
+        </p>
+        <p
+          className="mx-auto mb-10 max-w-3xl animate-slide-up text-lg font-medium text-slate-500 md:text-xl"
+          style={{ animationDelay: "0.25s" }}
+        >
+          把支撑人员的取数经验，沉淀为可复用、可校验的 AI 技能资产
+        </p>
+        <div
+          className="flex animate-slide-up flex-wrap justify-center gap-4"
+          style={{ animationDelay: "0.4s" }}
+        >
+          <a
+            href="#pain"
+            className="rounded-xl bg-brand-600 px-8 py-4 font-semibold text-white transition-all hover:bg-brand-700 hover:shadow-lg hover:shadow-brand-200"
+          >
+            为什么做这个
+          </a>
+          <a
+            href="#case"
+            className="rounded-xl border-2 border-brand-200 bg-white px-8 py-4 font-semibold text-brand-600 transition-all hover:border-brand-400 hover:bg-brand-50"
+          >
+            看真实案例
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────
+// 2. 背景/痛点
+// ─────────────────────────────────────────────────
+function PainSection() {
+  return (
+    <section id="pain" className="py-20 md:py-24 bg-white">
       <div className="container mx-auto px-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <SectionHeader
-            label="Asset Directory"
-            title="技能目录结构：把支撑人员经验沉淀成可调用资产"
-            desc="这里不是单纯的数据字典，而是把指标口径、高频维度、表文档、路由、补表、审计规则和案例经验放进同一套取数流程。"
+            label="Why"
+            title="为什么要做自然语言取数？"
+            desc="CDAP 支撑人员在日常取数中面临三个核心痛点，直接影响了业务响应效率和数据质量。"
           />
 
-          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm md:p-8">
-            <div className="grid gap-8 lg:grid-cols-[1.05fr_1fr] lg:items-stretch">
-              <div className="h-full rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
-                <div className="mb-5 flex items-center gap-3">
-                  <FolderTree className="text-brand-400" size={24} />
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-brand-300">
-                      write-query
-                    </p>
-                    <h3 className="text-xl font-black">技能资产目录</h3>
+          <div className="grid gap-6 md:grid-cols-3 mb-10">
+            {caseAge65Demo.painPoints.map((p, i) => {
+              const Icon = painIconMap[i] || AlertTriangle;
+              return (
+                <article
+                  key={p.title}
+                  className="relative rounded-2xl border border-slate-200 bg-slate-50 p-6 hover-lift"
+                >
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+                    <Icon size={20} strokeWidth={1.8} />
                   </div>
-                </div>
-                <div className="relative rounded-xl border border-slate-800 bg-slate-900 p-5 font-mono text-[13px] leading-7 text-slate-200 md:text-sm">
-                  {directoryLines.map((line, index) => (
-                    <div
-                      key={`${line.text}-${index}`}
-                      className={`relative flex items-center justify-between gap-3 whitespace-pre ${
-                        line.hot ? "font-black text-white" : ""
-                      }`}
-                    >
-                      <span
-                        className={
-                          line.asset
-                            ? "rounded-md text-brand-100"
-                            : "text-slate-300"
-                        }
-                      >
-                        {line.text}
-                      </span>
-                    </div>
-                  ))}
-                  <svg
-                    className="pointer-events-none absolute inset-0 hidden h-full w-full sm:block"
-                    viewBox="0 0 100 100"
-                    preserveAspectRatio="none"
-                    aria-hidden="true"
-                  >
-                    <defs>
-                      <marker
-                        id="dict-arrow"
-                        markerWidth="6"
-                        markerHeight="6"
-                        refX="5"
-                        refY="3"
-                        orient="auto"
-                      >
-                        <polygon points="0 0, 6 3, 0 6" fill="#fb7185" />
-                      </marker>
-                    </defs>
-                    <path
-                      d="M 68 33 C 73 31, 77 29, 82 27"
-                      stroke="#fb7185"
-                      strokeWidth="0.9"
-                      fill="none"
-                      strokeDasharray="1.8 1.2"
-                      markerEnd="url(#dict-arrow)"
-                    />
-                  </svg>
-                  <div className="absolute right-3 top-[9.35rem] hidden rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-black text-brand-700 shadow-lg shadow-slate-950/20 sm:block">
-                    数据字典
-                  </div>
-                </div>
-                <div className="mt-5 rounded-xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm leading-relaxed text-brand-100">
-                  底层技能名保留为 write-query，页面对外表达为“自然语言取数能力建设”。
-                </div>
-              </div>
+                  <h3 className="mb-3 text-lg font-black text-slate-900">
+                    {p.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-slate-600">
+                    {p.desc}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
 
-              <div className="relative h-full">
-                <div className="flex h-full flex-col justify-between gap-2.5">
-                  {annotations.map((asset) => {
-                    const Icon = assetIconMap[asset.kind] || FileCode2;
-
-                    return (
-                      <article
-                        key={asset.name}
-                        className="relative rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
-                      >
-                        <span
-                          aria-hidden="true"
-                          className="absolute -left-8 top-1/2 hidden h-px w-8 -translate-y-1/2 border-t-2 border-dashed border-brand-300 lg:block"
-                        />
-                        <span
-                          aria-hidden="true"
-                          className="absolute -left-1 top-1/2 hidden h-2 w-2 -translate-y-1/2 rounded-full bg-brand-500 lg:block"
-                        />
-                        <div className="mb-1.5 flex items-center gap-3">
-                          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                            <Icon size={17} strokeWidth={1.8} />
-                          </div>
-                          <div>
-                            <code className="text-sm font-black text-brand-700">
-                              {asset.name}
-                            </code>
-                            <h3 className="font-bold text-slate-900">
-                              {asset.title}
-                            </h3>
-                          </div>
-                        </div>
-                        <p className="text-sm leading-6 text-slate-600">
-                          {asset.desc}
-                        </p>
-                      </article>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+          <div className="rounded-2xl border border-brand-200 bg-brand-50 p-6 text-center">
+            <p className="text-lg font-bold text-brand-800">
+              把支撑人员的取数经验，沉淀为可复用、可校验的 AI 技能资产，让取数不再依赖个人经验。
+            </p>
           </div>
         </div>
       </div>
@@ -241,58 +175,24 @@ function AssetDirectory() {
   );
 }
 
-function GeneralWorkflow() {
+// ─────────────────────────────────────────────────
+// 3. 案例演示（核心板块）
+// ─────────────────────────────────────────────────
+function CaseSection() {
   return (
-    <section id="flow" className="py-20 md:py-24 bg-slate-50">
-      <div className="container mx-auto px-6">
-        <div className="max-w-6xl mx-auto">
-          <SectionHeader
-            label="General Workflow"
-            title="通用取数流程：先按经验判断，再生成 SQL"
-            desc="自然语言需求进入后，AI 不是直接写 SQL，而是按支撑人员的取数路径逐步完成识别、路由、补表、确认和自检。"
-          />
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {caseAge65Demo.generalFlow.map((step, index) => (
-              <article
-                key={step.title}
-                className="relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover-lift"
-              >
-                <span className="absolute right-5 top-5 text-4xl font-black text-brand-100">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <code className="text-xs font-bold text-brand-600">
-                  {step.source}
-                </code>
-                <h3 className="mt-3 mb-2 pr-12 text-lg font-black text-slate-900">
-                  {step.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-slate-600">
-                  {step.desc}
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function CaseIntro() {
-  return (
-    <section id="case" className="py-20 md:py-24 bg-white">
+    <section id="case" className="py-20 md:py-24 bg-slate-50">
       <div className="container mx-auto px-6">
         <div className="max-w-6xl mx-auto">
           <SectionHeader
             label="Real Case"
-            title="真实案例演示：65 岁以上机主近三个月订单"
-            desc="用真实对话记录展示：业务口语如何经过需求澄清、方案确认、资产调用、SQL 生成和自检交付。"
+            title="完整案例演示：65 岁以上机主近三个月订单"
+            desc="用一个真实案例展示：从一句口语需求，到可执行、可校验的 SQL 交付，全过程如何走通。"
           />
 
-          <div className="mb-8 rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+          {/* 3a. 用户原话 */}
+          <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white text-brand-600">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
                 <MessageSquare size={20} />
               </div>
               <div>
@@ -306,138 +206,306 @@ function CaseIntro() {
             </div>
           </div>
 
-          <FlowCaseMatrix rows={caseAge65Demo.matrixRows} />
+          {/* 3b. 需求澄清 + 方案确认 */}
+          <div className="mb-8 grid gap-6 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-black text-slate-900">
+                <MessageSquare size={20} className="text-brand-600" />
+                需求澄清
+              </h3>
+              <ul className="space-y-3">
+                {caseAge65Demo.clarification.map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
+                    <CheckCircle2 size={16} className="mt-0.5 flex-shrink-0 text-brand-500" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-black text-slate-900">
+                <ShieldCheck size={20} className="text-brand-600" />
+                方案确认
+              </h3>
+              <div className="overflow-hidden rounded-xl border border-slate-200">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="bg-slate-50">
+                      <th className="w-24 px-4 py-2.5 font-semibold text-slate-500">项</th>
+                      <th className="px-4 py-2.5 font-semibold text-slate-500">口径</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {caseAge65Demo.planRows.map((row, i) => (
+                      <tr
+                        key={row.item}
+                        className={i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}
+                      >
+                        <td className="px-4 py-2.5 font-bold text-brand-600">{row.item}</td>
+                        <td className="px-4 py-2.5 text-slate-700">{row.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* 3c. 资产命中 */}
+          <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-black text-slate-900">
+              <Database size={20} className="text-brand-600" />
+              本案例命中的技能资产
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {caseAge65Demo.caseAssets.map((asset) => {
+                const Icon =
+                  asset.role === "运行流程"
+                    ? FileCode2
+                    : asset.role === "表路由"
+                      ? GitBranch
+                      : asset.role === "补表规则"
+                        ? FileCode2
+                        : asset.role === "订单主表" || asset.role === "年龄补表"
+                          ? Database
+                          : ShieldCheck;
+
+                return (
+                  <div
+                    key={asset.name}
+                    className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover-lift"
+                  >
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-100 text-brand-600">
+                        <Icon size={14} strokeWidth={1.8} />
+                      </span>
+                      <code className="text-xs font-black text-brand-700">{asset.name}</code>
+                    </div>
+                    <p className="text-xs leading-relaxed text-slate-600">{asset.use}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 3d. 流程走通 */}
+          <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-black text-slate-900">
+              <GitBranch size={20} className="text-brand-600" />
+              取数流程走通
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {caseAge65Demo.flowSteps.map((step, index) => (
+                <div key={step.title} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-black text-white">
+                      {index + 1}
+                    </span>
+                    {index < caseAge65Demo.flowSteps.length - 1 && (
+                      <div className="mt-1 h-full w-px bg-brand-200" />
+                    )}
+                  </div>
+                  <div className="pb-4">
+                    <h4 className="text-sm font-black text-slate-900">{step.title}</h4>
+                    <div className="mt-0.5 text-xs text-brand-500">{step.source}</div>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500">{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 3e. SQL 交付 */}
+          <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-black text-slate-900">
+              <FileCode2 size={20} className="text-brand-600" />
+              SQL 交付
+            </h3>
+            <div className="grid gap-4 md:grid-cols-3 mb-6">
+              {caseAge65Demo.sqlSteps.map((s) => (
+                <div
+                  key={s.step}
+                  className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover-lift"
+                >
+                  <div className="mb-3 flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
+                    {s.step}
+                  </div>
+                  <code className="mb-1 block text-xs font-mono text-brand-600">{s.table}</code>
+                  <h4 className="mb-1 text-sm font-black text-slate-900">{s.title}</h4>
+                  <p className="text-xs text-slate-500">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mac-window hover-lift">
+              <div className="mac-header">
+                <div className="mac-dot" style={{ background: "#ff5f56" }} />
+                <div className="mac-dot" style={{ background: "#ffbd2e" }} />
+                <div className="mac-dot" style={{ background: "#27c93f" }} />
+                <span className="ml-2 text-xs text-slate-400">Hive SQL · 关键步骤摘要</span>
+              </div>
+              <pre className="mac-body">{caseAge65Demo.sqlSnippet}</pre>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-brand-100 bg-brand-50 p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <ShieldCheck className="text-brand-600" size={18} />
+                <h4 className="text-sm font-black text-slate-900">交付附带自检 SQL</h4>
+              </div>
+              <div className="space-y-2">
+                {caseAge65Demo.selfCheck.map((sql) => (
+                  <div
+                    key={sql}
+                    className="flex items-start gap-3 text-sm text-slate-700"
+                  >
+                    <ArrowRight size={14} className="mt-1 flex-shrink-0 text-brand-500" />
+                    <code className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-mono">
+                      {sql}
+                    </code>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 3f. 真实截图证据 */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-black text-slate-900">
+              <FileCheck2 size={20} className="text-brand-600" />
+              真实案例截图
+            </h3>
+            <AnnotatedCaseShot annotations={caseAge65Demo.annotations} />
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function DeliverySection() {
+// ─────────────────────────────────────────────────
+// 4. 能力沉淀
+// ─────────────────────────────────────────────────
+function AssetsSection() {
   return (
-    <section id="plan" className="py-20 md:py-24 bg-slate-800">
+    <section id="assets" className="py-20 md:py-24 bg-white">
       <div className="container mx-auto px-6">
         <div className="max-w-5xl mx-auto">
           <SectionHeader
-            label="SQL Delivery"
-            title="方案确认与 SQL 交付"
-            desc="先把主表、补表、时间字段、年龄口径和订单范围一次说清，再输出关键 SQL 步骤和自检 SQL。"
+            label="Assets"
+            title="我们沉淀了什么"
+            desc="把支撑人员的取数经验，拆解为可调用、可维护的标准化资产。"
+          />
+
+          {/* 统计卡片 */}
+          <div className="grid gap-4 md:grid-cols-3 mb-12">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center hover-lift">
+              <div className="mb-2 text-4xl font-black text-brand-600">
+                {caseAge65Demo.assetStats.tables}
+              </div>
+              <div className="text-sm font-semibold text-slate-700">张表文档</div>
+              <p className="mt-1 text-xs text-slate-500">含字段、分区、粒度、关联说明</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center hover-lift">
+              <div className="mb-2 text-4xl font-black text-brand-600">
+                {caseAge65Demo.assetStats.metrics}
+              </div>
+              <div className="text-sm font-semibold text-slate-700">个标准指标</div>
+              <p className="mt-1 text-xs text-slate-500">含 ID、名称、口径、来源表</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center hover-lift">
+              <div className="mb-2 text-4xl font-black text-brand-600">
+                {caseAge65Demo.assetStats.cases}
+              </div>
+              <div className="text-sm font-semibold text-slate-700">个验证案例</div>
+              <p className="mt-1 text-xs text-slate-500">可复用路径，加速相似需求</p>
+            </div>
+          </div>
+
+          {/* 资产类型卡片 */}
+          <h3 className="mb-6 text-center text-lg font-black text-slate-800">
+            七大核心资产类型
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {caseAge65Demo.assetTypes.map((asset) => {
+              const Icon = assetIconMap[asset.kind] || FileCode2;
+              return (
+                <article
+                  key={asset.name}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-5 hover-lift"
+                >
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+                      <Icon size={17} strokeWidth={1.8} />
+                    </div>
+                    <div>
+                      <code className="text-xs font-black text-brand-700">{asset.name}</code>
+                      <h4 className="text-sm font-bold text-slate-900">{asset.title}</h4>
+                    </div>
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-600">{asset.desc}</p>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────
+// 5. 下一步规划
+// ─────────────────────────────────────────────────
+function RoadmapSection() {
+  return (
+    <section id="roadmap" className="py-20 md:py-24 bg-slate-800">
+      <div className="container mx-auto px-6">
+        <div className="max-w-4xl mx-auto">
+          <SectionHeader
+            label="Roadmap"
+            title="下一步计划"
+            desc="从辅助取数到自助取数，逐步让业务人员零门槛使用。"
             inverse
           />
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-700">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-900 text-sm text-slate-300">
-                  <th className="w-32 px-6 py-4 font-semibold">项</th>
-                  <th className="px-6 py-4 font-semibold">口径</th>
-                </tr>
-              </thead>
-              <tbody>
-                {caseAge65Demo.planRows.map((row, i) => (
-                  <tr
-                    key={row.item}
-                    className={
-                      i % 2 === 0
-                        ? "bg-slate-900/50 text-slate-200"
-                        : "bg-slate-900 text-slate-200"
-                    }
-                  >
-                    <td className="whitespace-nowrap px-6 py-4 font-bold text-brand-400">
-                      {row.item}
-                    </td>
-                    <td className="px-6 py-4 text-sm leading-relaxed">
-                      {row.value}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {caseAge65Demo.sqlSteps.map((s) => (
-              <article
-                key={s.step}
-                className="rounded-2xl border border-slate-700 bg-slate-900 p-6 hover-lift"
+          <div className="grid gap-6 md:grid-cols-3">
+            {caseAge65Demo.roadmap.map((item, i) => (
+              <div
+                key={item.phase}
+                className="relative rounded-2xl border border-slate-700 bg-slate-900 p-6 hover-lift"
               >
-                <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
-                  {s.step}
+                <span className="absolute right-5 top-5 text-4xl font-black text-brand-900/30">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="mb-3 inline-flex rounded-full bg-brand-600/20 px-3 py-1 text-xs font-bold text-brand-400">
+                  {item.phase}
                 </div>
-                <code className="mb-2 block text-xs font-mono text-brand-400">
-                  {s.table}
-                </code>
-                <h3 className="mb-2 font-bold text-white">{s.title}</h3>
-                <p className="text-sm text-slate-400">{s.desc}</p>
-              </article>
+                <h3 className="mb-3 text-lg font-black text-white">{item.label}</h3>
+                <ul className="space-y-2">
+                  {item.items.map((li) => (
+                    <li key={li} className="flex items-start gap-2 text-sm text-slate-300">
+                      <ArrowRight size={14} className="mt-1 flex-shrink-0 text-brand-400" />
+                      <span>{li}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
           </div>
-
-          <div className="mt-10 mac-window hover-lift">
-            <div className="mac-header">
-              <div className="mac-dot" style={{ background: "#ff5f56" }} />
-              <div className="mac-dot" style={{ background: "#ffbd2e" }} />
-              <div className="mac-dot" style={{ background: "#27c93f" }} />
-              <span className="ml-2 text-xs text-slate-400">
-                Hive SQL · 关键步骤摘要
-              </span>
-            </div>
-            <pre className="mac-body">{caseAge65Demo.sqlSnippet}</pre>
-          </div>
-
-          <div className="mt-8 rounded-2xl border border-brand-500/30 bg-brand-500/10 p-6">
-            <div className="mb-4 flex items-center gap-3">
-              <ShieldCheck className="text-brand-400" size={22} />
-              <h3 className="text-lg font-black text-white">
-                交付附带自检 SQL
-              </h3>
-            </div>
-            <ul className="space-y-3">
-              {caseAge65Demo.selfCheck.map((sql) => (
-                <li
-                  key={sql}
-                  className="flex items-start gap-3 text-sm text-slate-200"
-                >
-                  <ArrowRight
-                    size={16}
-                    className="mt-1 flex-shrink-0 text-brand-400"
-                  />
-                  <code className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 font-mono">
-                    {sql}
-                  </code>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function SummarySection() {
-  return (
-    <section id="summary" className="py-20 md:py-24 bg-white">
-      <div className="container mx-auto px-6">
-        <div className="mx-auto max-w-4xl text-center">
-          <span className="section-label">Summary</span>
-          <h2 className="mt-2 mb-6 text-3xl font-bold text-slate-800 md:text-4xl">
-            阶段总结
-          </h2>
-          <div className="rounded-2xl border border-brand-200 bg-brand-50 p-8 text-left shadow-sm">
-            <p className="text-lg font-semibold leading-relaxed text-slate-800">
-              {caseAge65Demo.summary}
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
+// ─────────────────────────────────────────────────
+// App
+// ─────────────────────────────────────────────────
 export function App() {
   return (
     <div className="bg-slate-50 text-slate-800 font-sans antialiased">
+      {/* 右侧导航点 */}
       <nav
         className="fixed right-4 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-3 md:right-6 lg:flex"
         aria-label="页面章节导航"
@@ -456,63 +524,13 @@ export function App() {
         ))}
       </nav>
 
-      <section
-        id="hero"
-        className="relative flex min-h-screen items-center justify-center overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-brand-50 opacity-70" />
-        <div className="absolute left-10 top-20 h-72 w-72 rounded-full bg-brand-200 opacity-20 mix-blend-multiply blur-3xl animate-pulse-slow" />
-        <div
-          className="absolute bottom-20 right-10 h-96 w-96 rounded-full bg-brand-300 opacity-20 mix-blend-multiply blur-3xl animate-pulse-slow"
-          style={{ animationDelay: "1s" }}
-        />
+      <HeroSection />
+      <PainSection />
+      <CaseSection />
+      <AssetsSection />
+      <RoadmapSection />
 
-        <div className="container relative z-10 mx-auto px-6 py-20 text-center">
-          <div className="mb-8 inline-flex animate-fade-in items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700">
-            <Sparkles size={16} aria-hidden="true" />
-            <span>CDAP 业务数据 · 自然语言取数</span>
-          </div>
-          <h1 className="mb-6 animate-slide-up text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
-            <span className="gradient-text">自然语言取数能力建设</span>
-          </h1>
-          <p
-            className="mx-auto mb-5 max-w-3xl animate-slide-up text-xl font-bold text-slate-700 md:text-2xl"
-            style={{ animationDelay: "0.15s" }}
-          >
-            打造面向 CDAP 业务数据的自然语言取数能力
-          </p>
-          <p
-            className="mx-auto mb-10 max-w-3xl animate-slide-up text-lg font-medium text-slate-500 md:text-xl"
-            style={{ animationDelay: "0.25s" }}
-          >
-            让业务人员通过自然语言描述需求，自动生成可执行、可校验的取数 SQL。
-          </p>
-          <div
-            className="flex animate-slide-up flex-wrap justify-center gap-4"
-            style={{ animationDelay: "0.4s" }}
-          >
-            <a
-              href="#assets"
-              className="rounded-xl bg-brand-600 px-8 py-4 font-semibold text-white transition-all hover:bg-brand-700 hover:shadow-lg hover:shadow-brand-200"
-            >
-              查看技能资产
-            </a>
-            <a
-              href="#case"
-              className="rounded-xl border-2 border-brand-200 bg-white px-8 py-4 font-semibold text-brand-600 transition-all hover:border-brand-400 hover:bg-brand-50"
-            >
-              看真实案例
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <AssetDirectory />
-      <GeneralWorkflow />
-      <CaseIntro />
-      <DeliverySection />
-      <SummarySection />
-
+      {/* Footer */}
       <footer className="bg-slate-900 py-12 text-center">
         <div className="container mx-auto px-6">
           <p className="mb-4 text-sm text-slate-400">
