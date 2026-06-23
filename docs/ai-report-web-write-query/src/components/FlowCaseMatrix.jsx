@@ -20,7 +20,10 @@ const iconMap = {
  * }} props
  */
 export function FlowCaseMatrix({ rows }) {
-  const assets = [...rows.processAssets, ...rows.tableAssets];
+  const calloutsByAsset = rows.callouts.reduce((acc, callout) => {
+    acc[callout.assetId] = [...(acc[callout.assetId] || []), callout];
+    return acc;
+  }, {});
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -33,51 +36,12 @@ export function FlowCaseMatrix({ rows }) {
           左边是真实案例现场，右边是本次调用到的技能资产
         </h3>
         <p className="max-w-4xl leading-relaxed text-slate-300">
-          箭头从截图里的关键动作指向右侧资产：流程类资产讲清楚“文件干啥、案例怎么用、解决什么问题”；
-          表资产只展示命中的主表/补表和关键字段，证明链路找对了。
+          左侧真实截图只保留关键动作编号，避免遮挡原始对话；右侧按编号说明本次调用到的技能资产，
+          讲清楚文件用途、案例中怎么用、解决了什么口径问题。
         </p>
       </div>
 
       <div className="relative grid gap-0 bg-slate-50 lg:grid-cols-[minmax(0,1.15fr)_minmax(390px,0.85fr)]">
-        <svg
-          className="pointer-events-none absolute inset-0 z-10 hidden h-full w-full lg:block"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <defs>
-            <marker
-              id="asset-arrow"
-              markerWidth="7"
-              markerHeight="7"
-              refX="6"
-              refY="3.5"
-              orient="auto"
-            >
-              <polygon points="0 0, 7 3.5, 0 7" fill="#e11d48" />
-            </marker>
-          </defs>
-          {rows.callouts.map((callout) => {
-            const asset = assets.find((item) => item.id === callout.assetId);
-            if (!asset) return null;
-
-            return (
-              <line
-                key={callout.id}
-                x1={callout.target.x * 0.58}
-                y1={callout.target.y}
-                x2="62"
-                y2={asset.anchorY}
-                stroke="#e11d48"
-                strokeWidth="0.22"
-                strokeDasharray="1.2 0.8"
-                markerEnd="url(#asset-arrow)"
-                opacity="0.85"
-              />
-            );
-          })}
-        </svg>
-
         <div className="relative p-5 md:p-8">
           <div className="relative overflow-hidden rounded-2xl border border-slate-300 bg-slate-900 shadow-xl">
             <img
@@ -88,34 +52,44 @@ export function FlowCaseMatrix({ rows }) {
             {rows.callouts.map((callout) => (
               <div
                 key={callout.id}
-                className="absolute z-20 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2"
+                className="absolute right-3 z-20 flex -translate-y-1/2 items-center gap-2"
                 style={{
-                  left: `${callout.target.x}%`,
                   top: `${callout.target.y}%`,
                 }}
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-brand-600 text-xs font-black text-white shadow-lg">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-brand-600 text-xs font-black text-white shadow-lg shadow-brand-950/30 ring-4 ring-white/70">
                   {callout.id}
-                </span>
-                <span className="hidden rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-bold text-slate-800 shadow-lg md:inline-flex">
-                  {callout.label}
                 </span>
               </div>
             ))}
           </div>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:hidden">
-            {rows.callouts.map((callout) => (
-              <div
-                key={`legend-${callout.id}`}
-                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-700"
-              >
-                <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-black text-white">
-                  {callout.id}
-                </span>
-                {callout.label}
-              </div>
-            ))}
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {rows.callouts.map((callout) => (
+                <div
+                  key={`legend-${callout.id}`}
+                  className="flex min-w-0 items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700"
+                >
+                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-black text-white">
+                    {callout.id}
+                  </span>
+                  <span className="truncate">{callout.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 hidden items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 md:flex">
+              {rows.callouts.map((callout, index) => (
+                <React.Fragment key={`flow-${callout.id}`}>
+                  <span>
+                    {callout.id} {callout.label}
+                  </span>
+                  {index < rows.callouts.length - 1 && (
+                    <span className="text-brand-400">→</span>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -143,15 +117,27 @@ export function FlowCaseMatrix({ rows }) {
                       key={asset.id}
                       className="rounded-xl border border-slate-200 bg-slate-50 p-4"
                     >
-                      <div className="mb-3 flex items-center gap-2">
-                        <Icon
-                          size={17}
-                          className="text-brand-600"
-                          strokeWidth={1.8}
-                        />
-                        <code className="text-sm font-black text-brand-700">
-                          {asset.name}
-                        </code>
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Icon
+                            size={17}
+                            className="text-brand-600"
+                            strokeWidth={1.8}
+                          />
+                          <code className="text-sm font-black text-brand-700">
+                            {asset.name}
+                          </code>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {(calloutsByAsset[asset.id] || []).map((callout) => (
+                            <span
+                              key={`${asset.id}-${callout.id}`}
+                              className="rounded-full border border-brand-200 bg-white px-2 py-0.5 text-[11px] font-black text-brand-700"
+                            >
+                              {callout.id} {callout.label}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                       <dl className="space-y-2 text-sm leading-relaxed">
                         <div>
@@ -195,15 +181,27 @@ export function FlowCaseMatrix({ rows }) {
                     key={asset.id}
                     className="rounded-xl border border-brand-100 bg-brand-50 p-4"
                   >
-                    <div className="mb-2 flex items-center gap-2">
-                      <Database
-                        size={17}
-                        className="text-brand-600"
-                        strokeWidth={1.8}
-                      />
-                      <code className="text-sm font-black text-brand-700">
-                        {asset.name}
-                      </code>
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Database
+                          size={17}
+                          className="text-brand-600"
+                          strokeWidth={1.8}
+                        />
+                        <code className="text-sm font-black text-brand-700">
+                          {asset.name}
+                        </code>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {(calloutsByAsset[asset.id] || []).map((callout) => (
+                          <span
+                            key={`${asset.id}-${callout.id}`}
+                            className="rounded-full border border-brand-200 bg-white px-2 py-0.5 text-[11px] font-black text-brand-700"
+                          >
+                            {callout.id} {callout.label}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                     <div className="text-sm font-bold text-slate-900">
                       {asset.role}

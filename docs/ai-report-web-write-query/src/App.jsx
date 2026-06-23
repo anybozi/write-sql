@@ -31,6 +31,50 @@ const assetIconMap = {
   case: FileCheck2,
 };
 
+const directoryLines = [
+  { text: ".agents/skills/write-query/" },
+  { text: "├── SKILL.md", asset: "SKILL.md" },
+  { text: "├── scripts/" },
+  { text: "│   ├── audit_sql.py" },
+  { text: "│   └── lint_metric_index.py" },
+  { text: "└── references/" },
+  { text: "    ├── METRIC_INDEX.md", asset: "METRIC_INDEX.md / metrics/" },
+  { text: "    ├── metrics/", asset: "METRIC_INDEX.md / metrics/" },
+  { text: "    │   ├── 基本面/" },
+  { text: "    │   │   ├── M-BASIC-BB-001_主宽入网数.md", hot: true },
+  { text: "    │   │   ├── M-BASIC-BB-002_主宽入网积分.md" },
+  { text: "    │   │   └── M-BASIC-MV-006_移动月入网.md" },
+  { text: "    │   ├── 战新/" },
+  { text: "    │   │   └── M-NEW-SMB-001_量子密话月入网.md" },
+  { text: "    │   └── 专题/" },
+  { text: "    │       ├── M-TOPIC-BB-001_宽带T+n有效率.md" },
+  { text: "    │       └── M-TOPIC-PTS-001_净增积分.md" },
+  { text: "    ├── TABLE_INDEX.md", asset: "TABLE_INDEX.md / tables/" },
+  { text: "    ├── tables/", asset: "TABLE_INDEX.md / tables/" },
+  { text: "    │   ├── 040_全业务号码订单表.md" },
+  { text: "    │   ├── 041_优惠订单表.md" },
+  { text: "    │   ├── 069_全业务资料表.md" },
+  { text: "    │   ├── 014_优惠资料表.md" },
+  { text: "    │   └── 015_字典表视图.md" },
+  { text: "    ├── ROUTING.md", asset: "ROUTING.md" },
+  { text: "    ├── FIELD_BACKFILL.md", asset: "FIELD_BACKFILL.md" },
+  { text: "    ├── RULES.md", asset: "RULES.md" },
+  { text: "    └── verified-cases/", asset: "verified-cases/" },
+  { text: "        ├── VC-20260502-001_网点揽装人汇总.md" },
+  { text: "        ├── VC-20260611-001_附件号码清单实收.md" },
+  { text: "        └── VC-20260611-003_附件客户清单收入.md" },
+];
+
+const assetAnnotationPositions = {
+  "SKILL.md": { line: 1, y: 10 },
+  "METRIC_INDEX.md / metrics/": { line: 7, y: 25 },
+  "TABLE_INDEX.md / tables/": { line: 18, y: 43 },
+  "ROUTING.md": { line: 24, y: 58 },
+  "FIELD_BACKFILL.md": { line: 25, y: 72 },
+  "RULES.md": { line: 26, y: 84 },
+  "verified-cases/": { line: 27, y: 95 },
+};
+
 /**
  * @param {{ label: string, title: string, desc?: string, inverse?: boolean }} props
  */
@@ -68,112 +112,127 @@ function SectionHeader({ label, title, desc, inverse = false }) {
 }
 
 function AssetDirectory() {
+  const annotations = caseAge65Demo.assetDirectory.map((asset) => ({
+    ...asset,
+    ...(assetAnnotationPositions[asset.name] || {}),
+  }));
+
   return (
     <section id="assets" className="py-20 md:py-24 bg-white">
       <div className="container mx-auto px-6">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <SectionHeader
             label="Asset Directory"
             title="技能目录结构：把支撑人员经验沉淀成可调用资产"
             desc="这里不是单纯的数据字典，而是把指标口径、高频维度、表文档、路由、补表、审计规则和案例经验放进同一套取数流程。"
           />
 
-          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
-              <div className="mb-5 flex items-center gap-3">
-                <FolderTree className="text-brand-400" size={24} />
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-brand-300">
-                    write-query
-                  </p>
-                  <h3 className="text-xl font-black">技能资产目录</h3>
-                </div>
-              </div>
-              <div className="relative">
-                <pre className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900 p-5 text-sm leading-7 text-slate-200">
-{`.agents/skills/write-query/
-├── SKILL.md
-└── references/
-    ├── METRIC_INDEX.md
-    ├── metrics/
-    │   ├── 基本面/
-    │   │   ├── M-BASIC-BB-001_主宽入网数.md
-    │   │   ├── M-BASIC-BB-002_主宽入网积分.md
-    │   │   └── M-BASIC-MV-006_移动月入网.md
-    │   ├── 战新/
-    │   │   └── M-NEW-SMB-001_量子密话月入网.md
-    │   └── 专题/
-    │       ├── M-TOPIC-BB-001_宽带T+n有效率.md
-    │       └── M-TOPIC-PTS-001_净增积分.md
-    ├── TABLE_INDEX.md
-    ├── tables/
-    ├── ROUTING.md
-    ├── FIELD_BACKFILL.md
-    ├── RULES.md
-    └── verified-cases/`}
-                </pre>
-                <svg
-                  className="pointer-events-none absolute inset-0 hidden h-full w-full sm:block"
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
-                  aria-hidden="true"
-                >
-                  <defs>
-                    <marker
-                      id="metric-dict-arrow"
-                      markerWidth="6"
-                      markerHeight="6"
-                      refX="5"
-                      refY="3"
-                      orient="auto"
-                    >
-                      <polygon points="0 0, 6 3, 0 6" fill="#fb7185" />
-                    </marker>
-                  </defs>
-                  <path
-                    d="M 58 32 C 64 27, 68 24, 72 23"
-                    stroke="#f43f5e"
-                    strokeWidth="0.9"
-                    fill="none"
-                    strokeDasharray="1.6 1.1"
-                    markerEnd="url(#metric-dict-arrow)"
-                  />
-                </svg>
-                <div className="absolute right-5 top-[3.85rem] hidden rounded-2xl border-2 border-brand-300 bg-white/95 px-6 py-3 text-base font-black text-brand-700 shadow-xl shadow-brand-950/20 sm:block">
-                  数据字典
-                </div>
-              </div>
-              <div className="mt-5 rounded-xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm leading-relaxed text-brand-100">
-                底层技能名保留为 write-query，页面对外表达为“自然语言取数能力建设”。
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              {caseAge65Demo.assetDirectory.map((asset) => {
-                const Icon = assetIconMap[asset.kind] || FileCode2;
-
-                return (
-                  <article
-                    key={asset.name}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-5 hover-lift"
-                  >
-                    <div className="mb-3 flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                        <Icon size={20} strokeWidth={1.8} />
-                      </div>
-                      <code className="text-sm font-black text-brand-700">
-                        {asset.name}
-                      </code>
-                    </div>
-                    <h3 className="mb-2 font-bold text-slate-900">
-                      {asset.title}
-                    </h3>
-                    <p className="text-sm leading-relaxed text-slate-600">
-                      {asset.desc}
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm md:p-8">
+            <div className="grid gap-8 lg:grid-cols-[1.05fr_1fr] lg:items-stretch">
+              <div className="h-full rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <FolderTree className="text-brand-400" size={24} />
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-brand-300">
+                      write-query
                     </p>
-                  </article>
-                );
-              })}
+                    <h3 className="text-xl font-black">技能资产目录</h3>
+                  </div>
+                </div>
+                <div className="relative rounded-xl border border-slate-800 bg-slate-900 p-5 font-mono text-[13px] leading-7 text-slate-200 md:text-sm">
+                  {directoryLines.map((line, index) => (
+                    <div
+                      key={`${line.text}-${index}`}
+                      className={`relative flex items-center justify-between gap-3 whitespace-pre ${
+                        line.hot ? "font-black text-white" : ""
+                      }`}
+                    >
+                      <span
+                        className={
+                          line.asset
+                            ? "rounded-md text-brand-100"
+                            : "text-slate-300"
+                        }
+                      >
+                        {line.text}
+                      </span>
+                    </div>
+                  ))}
+                  <svg
+                    className="pointer-events-none absolute inset-0 hidden h-full w-full sm:block"
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                  >
+                    <defs>
+                      <marker
+                        id="dict-arrow"
+                        markerWidth="6"
+                        markerHeight="6"
+                        refX="5"
+                        refY="3"
+                        orient="auto"
+                      >
+                        <polygon points="0 0, 6 3, 0 6" fill="#fb7185" />
+                      </marker>
+                    </defs>
+                    <path
+                      d="M 68 33 C 73 31, 77 29, 82 27"
+                      stroke="#fb7185"
+                      strokeWidth="0.9"
+                      fill="none"
+                      strokeDasharray="1.8 1.2"
+                      markerEnd="url(#dict-arrow)"
+                    />
+                  </svg>
+                  <div className="absolute right-3 top-[9.35rem] hidden rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-black text-brand-700 shadow-lg shadow-slate-950/20 sm:block">
+                    数据字典
+                  </div>
+                </div>
+                <div className="mt-5 rounded-xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm leading-relaxed text-brand-100">
+                  底层技能名保留为 write-query，页面对外表达为“自然语言取数能力建设”。
+                </div>
+              </div>
+
+              <div className="relative h-full">
+                <div className="flex h-full flex-col justify-between gap-2.5">
+                  {annotations.map((asset) => {
+                    const Icon = assetIconMap[asset.kind] || FileCode2;
+
+                    return (
+                      <article
+                        key={asset.name}
+                        className="relative rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="absolute -left-8 top-1/2 hidden h-px w-8 -translate-y-1/2 border-t-2 border-dashed border-brand-300 lg:block"
+                        />
+                        <span
+                          aria-hidden="true"
+                          className="absolute -left-1 top-1/2 hidden h-2 w-2 -translate-y-1/2 rounded-full bg-brand-500 lg:block"
+                        />
+                        <div className="mb-1.5 flex items-center gap-3">
+                          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+                            <Icon size={17} strokeWidth={1.8} />
+                          </div>
+                          <div>
+                            <code className="text-sm font-black text-brand-700">
+                              {asset.name}
+                            </code>
+                            <h3 className="font-bold text-slate-900">
+                              {asset.title}
+                            </h3>
+                          </div>
+                        </div>
+                        <p className="text-sm leading-6 text-slate-600">
+                          {asset.desc}
+                        </p>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </div>
