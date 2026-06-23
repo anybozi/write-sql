@@ -259,7 +259,7 @@ where par_month_id = (select max(par_month_id) from dwm_yz_tb_comm_cm_all_final)
       {
         id: 2,
         label: "需求澄清",
-        target: { x: 54, y: 20 },
+        target: { x: 90, y: 20 },
         assetId: "skill",
       },
       {
