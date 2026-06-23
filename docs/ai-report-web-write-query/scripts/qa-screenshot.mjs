@@ -41,32 +41,57 @@ for (const viewport of viewports) {
     }
   });
 
-  await page.goto("http://127.0.0.1:5173", { waitUntil: "networkidle" });
+  await page.goto("http://127.0.0.1:5173/?qa=1", {
+    waitUntil: "networkidle",
+  });
+
   const metrics = await page.evaluate(() => {
     const ids = [
       "hero",
+      "pain",
+      "architecture",
       "case",
-      "annotated",
-      "matrix",
-      "plan",
-      "knowledge",
-      "flow",
-      "case-annotated",
+      "assets",
+      "roadmap",
+      "evidence-clarify",
+      "evidence-plan",
+      "evidence-sql",
     ];
     const missing = ids.filter((id) => !document.getElementById(id));
     const widthOverflow =
       document.documentElement.scrollWidth -
       document.documentElement.clientWidth;
     const bodyText = document.body.innerText;
+    const evidenceOrder = [
+      document.getElementById("evidence-clarify")?.getBoundingClientRect().top,
+      document.getElementById("evidence-plan")?.getBoundingClientRect().top,
+      document.getElementById("evidence-sql")?.getBoundingClientRect().top,
+    ];
     return {
       missing,
       widthOverflow,
-      hasTitle: bodyText.includes("write-query"),
-      hasCase: bodyText.includes("老年客群订单明细"),
-      hasAnnotations: bodyText.includes("业务同事用自然语言提需求"),
-      hasPlan: bodyText.includes("方案确认"),
-      hasKnowledge: bodyText.includes("ROUTING.md"),
-      hasMatrix: bodyText.includes("左目录结构"),
+      hasTitle: bodyText.includes("AI自然语言取数能力底座"),
+      hasPositioning: bodyText.includes(
+        "将业务自然语言需求，转化为准确、可解释、可校验的 CDAP Hive SQL",
+      ),
+      hasSixSections:
+        document.querySelectorAll("main > section[id]").length === 6,
+      hasCorrectMainTable: bodyText.includes("040 全业务号码订单表"),
+      hasCorrectBackfill: bodyText.includes("069 全业务资料表"),
+      hasClarifications: bodyText.includes("3 个关键澄清问题"),
+      hasFourCtas: bodyText.includes("4 段 CTAS"),
+      hasSevenChecks: bodyText.includes("7 类自检"),
+      hasThreeEvidenceImages:
+        document.querySelectorAll("[data-case-evidence] img").length === 3,
+      evidenceOrderIsCorrect:
+        evidenceOrder.every(Number.isFinite) &&
+        evidenceOrder[0] < evidenceOrder[1] &&
+        evidenceOrder[1] < evidenceOrder[2],
+      hasOldIncorrectScope: bodyText.includes("040+041"),
+      hasThreeStages:
+        bodyText.includes("能用") &&
+        bodyText.includes("好用") &&
+        bodyText.includes("复用"),
       scrollHeight: document.documentElement.scrollHeight,
     };
   });
@@ -76,11 +101,35 @@ for (const viewport of viewports) {
   );
   await page.screenshot({ path: screenshotPath, fullPage: true });
 
+  const failedChecks = [
+    metrics.missing.length > 0 && `missing: ${metrics.missing.join(", ")}`,
+    metrics.widthOverflow !== 0 && `width overflow: ${metrics.widthOverflow}px`,
+    !metrics.hasTitle && "missing report title",
+    !metrics.hasPositioning && "missing positioning statement",
+    !metrics.hasSixSections && "page does not contain six sections",
+    !metrics.hasCorrectMainTable && "missing 040 main table",
+    !metrics.hasCorrectBackfill && "missing 069 backfill table",
+    !metrics.hasClarifications && "missing clarification count",
+    !metrics.hasFourCtas && "missing CTAS count",
+    !metrics.hasSevenChecks && "missing self-check count",
+    !metrics.hasThreeEvidenceImages && "missing evidence screenshots",
+    !metrics.evidenceOrderIsCorrect && "evidence order is incorrect",
+    metrics.hasOldIncorrectScope && "old 040+041 scope is still visible",
+    !metrics.hasThreeStages && "missing three-stage roadmap",
+    consoleErrors.length > 0 && `console errors: ${consoleErrors.join(" | ")}`,
+  ].filter(Boolean);
+
+  if (failedChecks.length > 0) {
+    throw new Error(
+      `${viewport.name} QA failed:\n- ${failedChecks.join("\n- ")}`,
+    );
+  }
+
   if (viewport.name === "desktop") {
     const caseShotPath = fileURLToPath(
-      new URL("case-annotated-desktop.png", outputDir),
+      new URL("case-evidence-desktop.png", outputDir),
     );
-    const caseEl = page.locator("#case-annotated");
+    const caseEl = page.locator("#case-evidence-chain");
     if ((await caseEl.count()) > 0) {
       await caseEl.screenshot({ path: caseShotPath });
     }
